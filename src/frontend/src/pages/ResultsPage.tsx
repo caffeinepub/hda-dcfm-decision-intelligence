@@ -16,6 +16,7 @@ interface StoredResults {
   scores: Record<Dimension, number>;
   archetype: string;
   forceLevel: string;
+  responseTimes?: number[];
 }
 
 interface ResultsPageProps {

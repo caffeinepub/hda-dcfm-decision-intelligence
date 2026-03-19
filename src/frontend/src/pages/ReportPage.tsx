@@ -17,6 +17,7 @@ interface StoredResults {
   scores: Record<Dimension, number>;
   archetype: string;
   forceLevel: string;
+  responseTimes?: number[];
 }
 
 interface ReportPageProps {
@@ -178,6 +179,7 @@ interface Anomaly {
 function detectAnomalies(
   responses: number[],
   scores: Record<Dimension, number>,
+  responseTimes?: number[],
 ): Anomaly[] {
   const anomalies: Anomaly[] = [];
   const n = responses.length;
@@ -262,6 +264,38 @@ function detectAnomalies(
     });
   }
 
+  // 6. Rushed Completion (speed-clicking)
+  if (responseTimes && responseTimes.length > 0) {
+    const validTimes = responseTimes.filter((t) => t > 0);
+    if (validTimes.length > 0) {
+      const sorted = [...validTimes].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      const medianTime =
+        sorted.length % 2 === 0
+          ? (sorted[mid - 1] + sorted[mid]) / 2
+          : sorted[mid];
+      if (medianTime < 4000) {
+        anomalies.push({
+          title: "Rushed Completion Detected",
+          severity: "High",
+          icon: "⚡",
+          description:
+            "Most questions were answered in under 4 seconds, suggesting they may not have been read carefully. This significantly reduces the reliability of your results. We recommend retaking the assessment with focused attention.",
+        });
+      }
+    }
+  }
+
+  // 7. Identical Response Pattern (straight-lining)
+  if (responses.length > 0 && responses.every((r) => r === responses[0])) {
+    anomalies.push({
+      title: "Identical Response Pattern",
+      severity: "High",
+      icon: "⚠️",
+      description:
+        "All your responses were identical. This pattern suggests the questions may not have been read, or there was a systematic clicking pattern. Your results are unlikely to reflect your actual decision intelligence. Please retake the assessment.",
+    });
+  }
   return anomalies;
 }
 
@@ -331,6 +365,338 @@ const PRINT_STYLES = `
 }
 `;
 
+// ─── Mind Wave Chart ─────────────────────────────────────────────────────────
+const DIM_SHORT_LABELS = ["PM", "EM", "RRM", "IAI", "SIS", "EDI"];
+
+function MindWaveChart({ responseTimes }: { responseTimes: number[] }) {
+  const times = responseTimes.map((t) => t / 1000);
+  const maxT = Math.max(...times, 1);
+  const mean = times.reduce((a, b) => a + b, 0) / times.length;
+
+  const W = 760;
+  const H = 200;
+  const padL = 52;
+  const padR = 16;
+  const padT = 20;
+  const padB = 52;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+  const n = 36;
+  const xStep = plotW / (n - 1);
+
+  const toX = (i: number) => padL + i * xStep;
+  const toY = (t: number) => padT + plotH - Math.min(t / maxT, 1) * plotH;
+
+  // Build smooth bezier path
+  const pts = times.map((t, i) => ({ x: toX(i), y: toY(t) }));
+
+  let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+  for (let i = 1; i < pts.length; i++) {
+    const prev = pts[i - 1];
+    const curr = pts[i];
+    const cpx = ((prev.x + curr.x) / 2).toFixed(1);
+    d += ` C ${cpx} ${prev.y.toFixed(1)} ${cpx} ${curr.y.toFixed(1)} ${curr.x.toFixed(1)} ${curr.y.toFixed(1)}`;
+  }
+
+  const bottomY = padT + plotH;
+  const areaD = `${d} L ${pts[n - 1].x.toFixed(1)} ${bottomY} L ${pts[0].x.toFixed(1)} ${bottomY} Z`;
+
+  // Dimension boundaries (after index 5, 11, 17, 23, 29)
+  const boundaries = [5, 11, 17, 23, 29];
+  // Dimension mid-points for labels
+  const dimMids = [2.5, 8.5, 14.5, 20.5, 26.5, 32.5];
+
+  // Grid lines for Y axis
+  const gridSteps = 3;
+  const gridLines = Array.from({ length: gridSteps + 1 }, (_, i) => {
+    const val = (maxT * i) / gridSteps;
+    return { y: toY(val), label: val.toFixed(0) };
+  });
+
+  // High wavering points (>1.5x mean)
+  const highWaver = times
+    .map((t, i) => ({ t, i }))
+    .filter(({ t }) => t > 1.5 * mean)
+    .sort((a, b) => b.t - a.t)
+    .slice(0, 5);
+
+  // Insights
+  const dimTotals = [0, 1, 2, 3, 4, 5].map((d) => ({
+    dim: DIM_SHORT_LABELS[d],
+    total: times.slice(d * 6, d * 6 + 6).reduce((a, b) => a + b, 0),
+    index: d,
+  }));
+  const maxWaverDim = dimTotals.reduce((a, b) => (a.total > b.total ? a : b));
+  const topWaverQs = [...times]
+    .map((t, i) => ({ t, i }))
+    .sort((a, b) => b.t - a.t)
+    .slice(0, 3);
+  const topWaverDims = [
+    ...new Set(topWaverQs.map(({ i }) => DIM_SHORT_LABELS[Math.floor(i / 6)])),
+  ].join(", ");
+
+  return (
+    <div>
+      {/* Chart */}
+      <div className="overflow-x-auto">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          width="100%"
+          style={{ minWidth: 320 }}
+          role="img"
+          aria-label="Mind Wave Analysis Chart"
+        >
+          {/* Background */}
+          <rect width={W} height={H} fill="#0A1F14" rx="8" />
+
+          {/* Y-axis grid lines */}
+          {gridLines.map(({ y, label }) => (
+            <g key={label}>
+              <line
+                x1={padL}
+                y1={y}
+                x2={W - padR}
+                y2={y}
+                stroke="rgba(255,255,255,0.05)"
+                strokeWidth="1"
+              />
+              <text
+                x={padL - 4}
+                y={y + 4}
+                textAnchor="end"
+                fill="rgba(255,255,255,0.3)"
+                fontSize="8"
+                fontFamily="monospace"
+              >
+                {label}s
+              </text>
+            </g>
+          ))}
+
+          {/* Y-axis label */}
+          <text
+            x={10}
+            y={padT + plotH / 2}
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.3)"
+            fontSize="8"
+            fontFamily="monospace"
+            transform={`rotate(-90, 10, ${padT + plotH / 2})`}
+          >
+            Response Time (s)
+          </text>
+
+          {/* Dimension boundary lines */}
+          {boundaries.map((idx) => {
+            const bx = toX(idx) + xStep / 2;
+            return (
+              <line
+                key={idx}
+                x1={bx}
+                y1={padT}
+                x2={bx}
+                y2={padT + plotH}
+                stroke="rgba(212,175,55,0.25)"
+                strokeWidth="1"
+                strokeDasharray="3 3"
+              />
+            );
+          })}
+
+          {/* Dimension labels at bottom */}
+          {dimMids.map((mid, di) => (
+            <text
+              key={DIM_SHORT_LABELS[di]}
+              x={toX(mid)}
+              y={H - 8}
+              textAnchor="middle"
+              fill="rgba(212,175,55,0.6)"
+              fontSize="9"
+              fontFamily="monospace"
+              fontWeight="bold"
+            >
+              {DIM_SHORT_LABELS[di]}
+            </text>
+          ))}
+
+          {/* Question number labels at bottom (every 6th) */}
+          {[0, 5, 11, 17, 23, 29, 35].map((i) => (
+            <text
+              key={i}
+              x={toX(i)}
+              y={H - 20}
+              textAnchor="middle"
+              fill="rgba(255,255,255,0.2)"
+              fontSize="7"
+              fontFamily="monospace"
+            >
+              Q{i + 1}
+            </text>
+          ))}
+
+          {/* Area fill */}
+          <path d={areaD} fill="rgba(212,175,55,0.06)" />
+
+          {/* Waveform line */}
+          <path
+            d={d}
+            fill="none"
+            stroke="#D4AF37"
+            strokeWidth="2.5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+
+          {/* Data point dots */}
+          {pts.map((p, i) => {
+            const isHigh = times[i] > 1.5 * mean;
+            return (
+              <circle
+                key={p.x}
+                cx={p.x}
+                cy={p.y}
+                r={isHigh ? 5 : 2.5}
+                fill={isHigh ? "#F0C030" : "#D4AF37"}
+                stroke={isHigh ? "rgba(240,192,48,0.4)" : "none"}
+                strokeWidth={isHigh ? 4 : 0}
+              />
+            );
+          })}
+
+          {/* Annotations for highest wavering points */}
+          {highWaver.slice(0, 3).map(({ i }) => {
+            const p = pts[i];
+            const labelY = p.y - 10 < padT + 8 ? p.y + 16 : p.y - 10;
+            return (
+              <g key={i}>
+                <rect
+                  x={p.x - 12}
+                  y={labelY - 8}
+                  width="24"
+                  height="12"
+                  rx="3"
+                  fill="rgba(240,192,48,0.15)"
+                  stroke="rgba(240,192,48,0.4)"
+                  strokeWidth="0.5"
+                />
+                <text
+                  x={p.x}
+                  y={labelY + 0.5}
+                  textAnchor="middle"
+                  fill="#F0C030"
+                  fontSize="7.5"
+                  fontFamily="monospace"
+                  fontWeight="bold"
+                >
+                  Q{i + 1}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      {/* Insights */}
+      <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div
+          className="rounded-xl p-4"
+          style={{
+            backgroundColor: "rgba(212,175,55,0.07)",
+            border: "1px solid rgba(212,175,55,0.15)",
+          }}
+        >
+          <p
+            className="text-xs font-bold uppercase tracking-widest mb-1"
+            style={{ color: "#D4AF37" }}
+          >
+            Peak Wavering
+          </p>
+          <p className="text-xs text-white/60 leading-relaxed">
+            Highest reflection at{" "}
+            <strong style={{ color: "#F0C030" }}>Q{topWaverQs[0].i + 1}</strong>{" "}
+            ({topWaverQs[0].t.toFixed(1)}s) — in the{" "}
+            <strong style={{ color: "#F0C030" }}>
+              {DIM_SHORT_LABELS[Math.floor(topWaverQs[0].i / 6)]}
+            </strong>{" "}
+            dimension. Deep pauses often indicate grey zones or genuine
+            self-reflection.
+          </p>
+        </div>
+        <div
+          className="rounded-xl p-4"
+          style={{
+            backgroundColor: "rgba(212,175,55,0.07)",
+            border: "1px solid rgba(212,175,55,0.15)",
+          }}
+        >
+          <p
+            className="text-xs font-bold uppercase tracking-widest mb-1"
+            style={{ color: "#D4AF37" }}
+          >
+            Most Wavering Dimension
+          </p>
+          <p className="text-xs text-white/60 leading-relaxed">
+            The <strong style={{ color: "#F0C030" }}>{maxWaverDim.dim}</strong>{" "}
+            dimension had the highest total reflection time (
+            {maxWaverDim.total.toFixed(0)}s), suggesting this may be your most
+            complex or uncertain area.
+          </p>
+        </div>
+        <div
+          className="rounded-xl p-4"
+          style={{
+            backgroundColor: "rgba(212,175,55,0.07)",
+            border: "1px solid rgba(212,175,55,0.15)",
+          }}
+        >
+          <p
+            className="text-xs font-bold uppercase tracking-widest mb-1"
+            style={{ color: "#D4AF37" }}
+          >
+            Grey Zone Questions
+          </p>
+          <p className="text-xs text-white/60 leading-relaxed">
+            Your highest wavering was across{" "}
+            <strong style={{ color: "#F0C030" }}>{topWaverDims}</strong>. These
+            dimensions may represent your grey areas — worth revisiting for
+            deeper self-inquiry.
+          </p>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div
+        className="flex flex-wrap gap-5 mt-4 pt-4"
+        style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+      >
+        <div className="flex items-center gap-2">
+          <span
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: "#D4AF37" }}
+          />
+          <span className="text-xs text-white/50">Normal response</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: "#F0C030" }}
+          />
+          <span className="text-xs text-white/50">
+            High wavering (&gt;1.5× mean) — deeper reflection or uncertainty
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-block w-8 border-t border-dashed"
+            style={{ borderColor: "rgba(212,175,55,0.4)" }}
+          />
+          <span className="text-xs text-white/50">Dimension boundary</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export function ReportPage({ onNavigate }: ReportPageProps) {
   const [results, setResults] = useState<StoredResults | null>(null);
@@ -364,7 +730,7 @@ export function ReportPage({ onNavigate }: ReportPageProps) {
     );
   }
 
-  const { responses, scores, archetype, forceLevel } = results;
+  const { responses, scores, archetype, forceLevel, responseTimes } = results;
   const avg = getOverallAverage(scores);
   const recommendations = getRecommendations(scores);
   const printDate = new Date().toLocaleDateString("en-US", {
@@ -373,7 +739,7 @@ export function ReportPage({ onNavigate }: ReportPageProps) {
     day: "numeric",
   });
 
-  const anomalies = detectAnomalies(responses, scores);
+  const anomalies = detectAnomalies(responses, scores, responseTimes);
 
   // Compute user position on archetype map
   const rawX = (scores.edi + scores.sis - scores.iai - scores.em) / 2;
@@ -1379,6 +1745,56 @@ export function ReportPage({ onNavigate }: ReportPageProps) {
                 them to inform a more nuanced reading of your elidi Score.
               </p>
             </>
+          )}
+        </motion.div>
+
+        {/* ── Mind Wave Analysis ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="rounded-2xl p-8 mb-10"
+          style={{
+            backgroundColor: "#122B1E",
+            border: "1px solid rgba(212,175,55,0.25)",
+          }}
+          data-ocid="report.panel"
+          data-print-card
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <span style={{ fontSize: "1.5rem" }}>🧠</span>
+            <div>
+              <h2 className="text-xl font-bold" style={{ color: "#D4AF37" }}>
+                Mind Wave Analysis
+              </h2>
+              <p className="text-xs text-white/40 mt-0.5 uppercase tracking-widest">
+                Cognitive Wavering Pattern · ECG-Style Response Journey
+              </p>
+            </div>
+          </div>
+          <p className="text-sm text-white/55 mb-6 leading-relaxed">
+            Your cognitive wavering pattern throughout the assessment — peaks
+            indicate moments of deeper reflection or uncertainty. The higher the
+            wave, the longer you paused to think.
+          </p>
+
+          {!responseTimes || responseTimes.filter((t) => t > 0).length < 10 ? (
+            <div
+              className="rounded-xl px-5 py-6 flex items-center gap-3"
+              style={{
+                backgroundColor: "rgba(212,175,55,0.06)",
+                border: "1px solid rgba(212,175,55,0.15)",
+              }}
+              data-ocid="report.empty_state"
+            >
+              <span style={{ fontSize: "1.5rem" }}>📊</span>
+              <p className="text-sm text-white/60">
+                Mind Wave data is not available for this session. Complete the
+                assessment to see your Mind Wave Analysis.
+              </p>
+            </div>
+          ) : (
+            <MindWaveChart responseTimes={responseTimes} />
           )}
         </motion.div>
 

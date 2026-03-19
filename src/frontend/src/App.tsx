@@ -3,12 +3,13 @@ import { useState } from "react";
 import { Navbar } from "./components/Navbar";
 import { AssessmentPage } from "./pages/AssessmentPage";
 import { LandingPage } from "./pages/LandingPage";
+import { LearnMorePage } from "./pages/LearnMorePage";
 import { ReportPage } from "./pages/ReportPage";
 import { ResultsPage } from "./pages/ResultsPage";
 
 const queryClient = new QueryClient();
 
-type Page = "landing" | "assessment" | "results" | "report";
+type Page = "landing" | "assessment" | "results" | "report" | "learnmore";
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
@@ -18,13 +19,16 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const showNavbar = currentPage === "landing";
+  const showNavbar = currentPage === "landing" || currentPage === "learnmore";
 
   return (
     <div className="min-h-screen">
       {showNavbar && <Navbar onNavigate={handleNavigate} />}
 
       {currentPage === "landing" && <LandingPage onNavigate={handleNavigate} />}
+      {currentPage === "learnmore" && (
+        <LearnMorePage onNavigate={handleNavigate} />
+      )}
       {currentPage === "assessment" && (
         <AssessmentPage onNavigate={handleNavigate} />
       )}

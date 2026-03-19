@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSubmitAssessment } from "../hooks/useQueries";
 import {
   DIMENSIONS,
@@ -27,7 +27,11 @@ interface AssessmentPageProps {
 export function AssessmentPage({ onNavigate }: AssessmentPageProps) {
   const [step, setStep] = useState(0);
   const [responses, setResponses] = useState<number[]>(Array(36).fill(0));
+  const [responseTimes, setResponseTimes] = useState<number[]>(
+    Array(36).fill(0),
+  );
   const [direction, setDirection] = useState<1 | -1>(1);
+  const lastInteractionTime = useRef<number>(Date.now());
   const submitMutation = useSubmitAssessment();
 
   const currentDim = DIMENSIONS[step];
@@ -40,10 +44,25 @@ export function AssessmentPage({ onNavigate }: AssessmentPageProps) {
   const allAnswered = stepResponses.every((r) => r > 0);
   const progress = (step / 6) * 100;
 
+  // Reset interaction timer when dimension changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional - only ref is mutated
+  useEffect(() => {
+    lastInteractionTime.current = Date.now();
+  }, [step]);
+
   const handleResponse = (questionIndex: number, value: number) => {
+    const globalIndex = stepStartIndex + questionIndex;
+    const now = Date.now();
+    const elapsed = now - lastInteractionTime.current;
+    lastInteractionTime.current = now;
+
     const newResponses = [...responses];
-    newResponses[stepStartIndex + questionIndex] = value;
+    newResponses[globalIndex] = value;
     setResponses(newResponses);
+
+    const newTimes = [...responseTimes];
+    newTimes[globalIndex] = elapsed;
+    setResponseTimes(newTimes);
   };
 
   const handleNext = () => {
@@ -65,7 +84,13 @@ export function AssessmentPage({ onNavigate }: AssessmentPageProps) {
 
     localStorage.setItem(
       "hda_results",
-      JSON.stringify({ responses, scores, archetype, forceLevel }),
+      JSON.stringify({
+        responses,
+        scores,
+        archetype,
+        forceLevel,
+        responseTimes,
+      }),
     );
 
     try {
@@ -164,8 +189,9 @@ export function AssessmentPage({ onNavigate }: AssessmentPageProps) {
                 {DIMENSION_LABELS[currentDim]}
               </h1>
               <p className="text-gray-500 text-sm">
-                Rate each statement from 1 (Strongly Disagree) to 7 (Strongly
-                Agree) based on your typical behavior.
+                For each situation below, choose how closely it matches your
+                typical approach — from 1 (Strongly Disagree) to 7 (Strongly
+                Agree).
               </p>
             </div>
 

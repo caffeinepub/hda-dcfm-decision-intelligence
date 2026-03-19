@@ -265,7 +265,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 <button
                   type="button"
                   className="px-8 py-4 rounded-xl font-semibold text-base text-white/80 border border-white/20 hover:border-white/40 hover:text-white transition-all"
-                  onClick={() => onNavigate("assessment")}
+                  onClick={() => onNavigate("learnmore")}
                   data-ocid="hero.secondary_button"
                 >
                   Learn More
@@ -662,42 +662,87 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             "linear-gradient(135deg, #061218 0%, #081C2F 60%, #0a2010 100%)",
         }}
       >
-        <div className="max-w-4xl mx-auto text-center">
-          <div
-            className="w-16 h-0.5 mx-auto mb-8"
-            style={{ backgroundColor: "#C8A24A" }}
-          />
-          <p
-            className="text-xs tracking-[0.35em] uppercase mb-6"
-            style={{ color: "#C8A24A" }}
-          >
-            The Mind Behind elidi
-          </p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">
-            Sathish Sampath, <span style={{ color: "#C8A24A" }}>FRSPH</span>
-          </h2>
-          <p
-            className="text-sm tracking-widest uppercase mb-8"
-            style={{ color: "#C8A24A99" }}
-          >
-            Human Decision Architect&nbsp;&nbsp;·&nbsp;&nbsp;Mind Hack
-            Specialist&nbsp;&nbsp;·&nbsp;&nbsp;CEO, MESMA
-          </p>
-          <p className="text-base md:text-lg text-white/75 leading-relaxed max-w-2xl mx-auto mb-10">
-            A behavioural psychology researcher, hypnotherapist, internationally
-            acclaimed Keynote Speaker, and Award-Winning Author — Sathish has
-            spent decades decoding the invisible forces that shape human
-            decisions.{" "}
-            <span className="text-white font-medium">
-              elidi is his brainchild
-            </span>
-            : the world&apos;s first HDA-DCFM-based decision intelligence
-            framework, engineered to transform how you think, choose, and lead.
-          </p>
-          <div
-            className="w-16 h-0.5 mx-auto"
-            style={{ backgroundColor: "#C8A24A33" }}
-          />
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-10">
+            <div
+              className="w-16 h-0.5 mx-auto mb-8"
+              style={{ backgroundColor: "#C8A24A" }}
+            />
+            <p
+              className="text-xs tracking-[0.35em] uppercase mb-6"
+              style={{ color: "#C8A24A" }}
+            >
+              The Mind Behind elidi
+            </p>
+          </div>
+
+          {/* Two-column: photo left, text right */}
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-10 md:gap-14">
+            {/* Photo */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="flex-shrink-0 flex justify-center"
+            >
+              <div
+                className="rounded-2xl overflow-hidden shadow-2xl"
+                style={{
+                  border: "2px solid rgba(200,162,74,0.35)",
+                }}
+              >
+                <img
+                  src="/assets/uploads/SATHISH-SAMPATH11-2-1.jpg"
+                  alt="Sathish Sampath"
+                  className="rounded-2xl object-cover"
+                  style={{
+                    width: "200px",
+                    height: "260px",
+                    objectPosition: "50% 10%",
+                    transform: "scale(1.5)",
+                    transformOrigin: "50% 10%",
+                  }}
+                />
+              </div>
+            </motion.div>
+
+            {/* Text content */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="flex-1 min-w-0"
+            >
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">
+                Sathish Sampath, <span style={{ color: "#C8A24A" }}>FRSPH</span>
+              </h2>
+              <p
+                className="text-sm tracking-widest uppercase mb-6"
+                style={{ color: "#C8A24A99" }}
+              >
+                Human Decision Architect&nbsp;&nbsp;·&nbsp;&nbsp;Mind Hack
+                Specialist&nbsp;&nbsp;·&nbsp;&nbsp;CEO, MESMA
+              </p>
+              <p className="text-base md:text-lg text-white/75 leading-relaxed mb-10">
+                A behavioural psychology researcher, hypnotherapist,
+                internationally acclaimed Keynote Speaker, and Award-Winning
+                Author — Sathish has spent decades decoding the invisible forces
+                that shape human decisions.{" "}
+                <span className="text-white font-medium">
+                  elidi is his brainchild
+                </span>
+                : the world&apos;s first HDA-DCFM-based decision intelligence
+                framework, engineered to transform how you think, choose, and
+                lead.
+              </p>
+              <div
+                className="w-16 h-0.5"
+                style={{ backgroundColor: "#C8A24A33" }}
+              />
+            </motion.div>
+          </div>
         </div>
       </section>
 
