@@ -1,0 +1,79 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.625rem;
+    --background: 0.97 0.008 240;
+    --foreground: 0.2 0.04 240;
+    --card: 1 0 0;
+    --card-foreground: 0.2 0.04 240;
+    --popover: 1 0 0;
+    --popover-foreground: 0.2 0.04 240;
+    --primary: 0.22 0.055 240;
+    --primary-foreground: 1 0 0;
+    --secondary: 0.94 0.01 240;
+    --secondary-foreground: 0.22 0.055 240;
+    --muted: 0.94 0.01 240;
+    --muted-foreground: 0.5 0.02 240;
+    --accent: 0.72 0.12 78;
+    --accent-foreground: 0.18 0.04 242;
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+    --border: 0.88 0.01 240;
+    --input: 0.88 0.01 240;
+    --ring: 0.72 0.12 78;
+    --chart-1: 0.72 0.12 78;
+    --chart-2: 0.5 0.15 240;
+    --chart-3: 0.6 0.12 160;
+    --chart-4: 0.65 0.15 300;
+    --chart-5: 0.55 0.18 30;
+    --sidebar: 0.985 0 0;
+    --sidebar-foreground: 0.145 0 0;
+    --sidebar-primary: 0.205 0 0;
+    --sidebar-primary-foreground: 0.985 0 0;
+    --sidebar-accent: 0.97 0 0;
+    --sidebar-accent-foreground: 0.205 0 0;
+    --sidebar-border: 0.922 0 0;
+    --sidebar-ring: 0.708 0 0;
+    --navy-dark: 0.18 0.04 242;
+    --navy: 0.22 0.055 240;
+    --gold: 0.72 0.12 78;
+    --gold-light: 0.76 0.1 80;
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Plus Jakarta Sans", sans-serif;
+  }
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  body,
+  html {
+    background: #1b4332 !important;
+    color: #e8f5e9 !important;
+  }
+  .print-full-width {
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #1b4332 !important;
+  }
+  .min-h-screen {
+    background: #1b4332 !important;
+  }
+}
