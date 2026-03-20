@@ -1,3 +1,12 @@
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState } from "react";
+
 interface HowItWorksPageProps {
   onNavigate: (page: string) => void;
 }
@@ -151,7 +160,765 @@ const useCases = [
   },
 ];
 
+function DCFMOriginModal({
+  open,
+  onClose,
+}: { open: boolean; onClose: () => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent
+        className="max-w-4xl w-full p-0 border-0 overflow-hidden"
+        style={{ background: "#0A1F14", maxHeight: "92vh" }}
+        data-ocid="dcfm_origin.dialog"
+      >
+        <ScrollArea className="h-full" style={{ maxHeight: "92vh" }}>
+          <div className="p-0">
+            {/* Modal Header */}
+            <div
+              className="sticky top-0 z-10 px-8 py-6"
+              style={{
+                background: "linear-gradient(135deg, #0A1F14 0%, #1B4332 100%)",
+                borderBottom: "1px solid rgba(200,162,74,0.3)",
+              }}
+            >
+              <DialogHeader>
+                <div
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-3"
+                  style={{
+                    background: "rgba(200,162,74,0.2)",
+                    color: "#C8A24A",
+                    border: "1px solid rgba(200,162,74,0.4)",
+                  }}
+                >
+                  🔬 Original Scientific Invention
+                </div>
+                <DialogTitle className="text-2xl md:text-3xl font-bold text-white leading-tight">
+                  From FAM to CHOM to DCFM: The Origin Story
+                </DialogTitle>
+                <p className="text-sm mt-2" style={{ color: "#8FB08F" }}>
+                  An Original Scientific Invention by Sathish Sampath &amp;
+                  MESMA
+                </p>
+              </DialogHeader>
+
+              {/* Patent Notice Banner */}
+              <div
+                className="mt-4 rounded-xl px-5 py-4 flex items-start gap-3"
+                style={{
+                  background: "linear-gradient(135deg, #C8A24A, #E8C96A)",
+                  color: "#0D2B1E",
+                }}
+              >
+                <span className="text-xl flex-shrink-0">⚖️</span>
+                <p className="text-sm font-semibold leading-relaxed">
+                  <strong>Patent Pending:</strong> elidi and the Dynamic
+                  Cognitive Field Manifold (DCFM) are original inventions under
+                  active patent filing and protection process by{" "}
+                  <strong>Sathish Sampath &amp; MESMA</strong>. All rights
+                  reserved.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-8 py-8 space-y-10">
+              {/* Section 1 — DCFM Visual */}
+              <section>
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{ border: "1px solid rgba(200,162,74,0.25)" }}
+                >
+                  <img
+                    src="/assets/uploads/ChatGPT-Image-Mar-18-2026-at-07_27_02-PM-2.png"
+                    alt="Dynamic Cognitive Field Manifold (DCFM) visual"
+                    className="w-full object-cover"
+                    style={{
+                      maxHeight: "420px",
+                      objectFit: "contain",
+                      background: "#0D2B1E",
+                    }}
+                  />
+                  <div
+                    className="px-5 py-3 text-center text-sm"
+                    style={{
+                      background: "rgba(200,162,74,0.08)",
+                      color: "#C8A24A",
+                      borderTop: "1px solid rgba(200,162,74,0.2)",
+                    }}
+                  >
+                    <em>
+                      Dynamic Cognitive Field Manifold (DCFM) — invented by
+                      Sathish Sampath &amp; MESMA
+                    </em>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 2 — FAM */}
+              <section>
+                <StageBadge
+                  number="STAGE 1"
+                  label="The Foundation"
+                  color="#4A9EFF"
+                />
+                <div
+                  className="rounded-2xl p-6 mt-4"
+                  style={{
+                    background: "#1B4332",
+                    border: "1px solid rgba(74,158,255,0.25)",
+                  }}
+                >
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    Folded Attractor Manifold{" "}
+                    <span style={{ color: "#4A9EFF" }}>(FAM)</span>
+                  </h3>
+                  <p className="text-sm mb-5" style={{ color: "#B8D4B8" }}>
+                    FAM is a scientifically established model representing the
+                    mind as trajectories evolving in a high-dimensional
+                    attractor landscape — think of it as a folded terrain of
+                    energy basins where mental states settle into stable
+                    configurations. It provided the mathematical scaffolding
+                    that any serious cognitive model must build upon.
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <FeatureList
+                      title="✔ Strengths"
+                      color="#34D399"
+                      items={[
+                        "Mathematically grounded attractor dynamics",
+                        "Stability conditions formally defined",
+                        "High-dimensional state space support",
+                        "Scientifically validated and published",
+                      ]}
+                    />
+                    <FeatureList
+                      title="✗ Limitations"
+                      color="#FF6B8A"
+                      items={[
+                        "No cyclic cognition (memory/emotional loops)",
+                        "Weak continuous flow modeling",
+                        "Decision boundaries only partial",
+                        "No fiber structure for internal loops",
+                      ]}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 3 — CHOM */}
+              <section>
+                <StageBadge
+                  number="STAGE 2"
+                  label="The Creative Synthesis"
+                  color="#FFB347"
+                />
+                <div
+                  className="rounded-2xl p-6 mt-4"
+                  style={{
+                    background: "#1B4332",
+                    border: "1px solid rgba(255,179,71,0.25)",
+                  }}
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <h3 className="text-xl font-bold text-white">
+                      Cognitive Hyper-Oloid Manifold{" "}
+                      <span style={{ color: "#FFB347" }}>(CHOM)</span>
+                    </h3>
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0 mt-1"
+                      style={{
+                        background: "rgba(255,179,71,0.15)",
+                        color: "#FFB347",
+                        border: "1px solid rgba(255,179,71,0.3)",
+                      }}
+                    >
+                      Sathish's Invention
+                    </span>
+                  </div>
+                  <p className="text-sm mb-4" style={{ color: "#B8D4B8" }}>
+                    CHOM was Sathish Sampath's original creative synthesis —
+                    fusing three geometric concepts into a single cognitive
+                    architecture:{" "}
+                    <strong className="text-white">
+                      hyper-dimensional space
+                    </strong>
+                    , the{" "}
+                    <strong className="text-white">
+                      oloid's continuous orientation-free rotation
+                    </strong>
+                    , and the{" "}
+                    <strong className="text-white">
+                      torus's looping cyclic structure
+                    </strong>
+                    .
+                  </p>
+                  <div
+                    className="rounded-xl p-4 mb-4"
+                    style={{
+                      background: "rgba(255,179,71,0.08)",
+                      border: "1px solid rgba(255,179,71,0.2)",
+                    }}
+                  >
+                    <p className="text-sm font-semibold text-white mb-2">
+                      The Intuition Behind CHOM:
+                    </p>
+                    <ul
+                      className="space-y-2 text-sm"
+                      style={{ color: "#E8C96A" }}
+                    >
+                      <li>
+                        • The <strong>oloid's</strong> continuous,
+                        orientation-free rotation captured how the mind moves
+                        without fixed direction — never settling, always
+                        evolving
+                      </li>
+                      <li>
+                        • The <strong>torus</strong> captured looping memory,
+                        recurring emotions, and habitual thought patterns as
+                        internal cycles
+                      </li>
+                      <li>
+                        • Together, they formed a richer picture of the mind
+                        than any single geometric model had attempted
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p
+                      className="text-xs font-bold mb-2"
+                      style={{ color: "#FF6B8A" }}
+                    >
+                      Identified Gaps → Led to DCFM:
+                    </p>
+                    <ul className="grid md:grid-cols-2 gap-2">
+                      {[
+                        "Not formally defined as a mathematical object",
+                        "Existed in 3D intuition; mind needs N-dimensional space",
+                        "Lacked governing equations of motion",
+                        "No measurable mapping to decisions or behaviors",
+                      ].map((gap) => (
+                        <li
+                          key={gap}
+                          className="flex items-start gap-2 text-xs rounded-lg px-3 py-2"
+                          style={{
+                            background: "rgba(255,107,138,0.08)",
+                            color: "#B8D4B8",
+                            border: "1px solid rgba(255,107,138,0.15)",
+                          }}
+                        >
+                          <span style={{ color: "#FF6B8A" }}>→</span>
+                          {gap}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 4 — DCFM */}
+              <section>
+                <StageBadge
+                  number="STAGE 3"
+                  label="The Mathematical Breakthrough"
+                  color="#C8A24A"
+                />
+                <div
+                  className="rounded-2xl p-6 mt-4"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #1B4332 0%, #0D2B1E 100%)",
+                    border: "2px solid rgba(200,162,74,0.4)",
+                  }}
+                >
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    Dynamic Cognitive Field Manifold{" "}
+                    <span style={{ color: "#C8A24A" }}>(DCFM)</span>
+                  </h3>
+                  <p className="text-sm mb-2" style={{ color: "#B8D4B8" }}>
+                    DCFM is the formal mathematical upgrade of CHOM —
+                    transforming the creative geometric intuition into a
+                    rigorous, publishable, and measurable scientific structure.
+                  </p>
+                  <div
+                    className="rounded-xl p-4 mb-6"
+                    style={{
+                      background: "rgba(200,162,74,0.1)",
+                      border: "1px solid rgba(200,162,74,0.3)",
+                    }}
+                  >
+                    <p
+                      className="text-xs uppercase tracking-widest mb-1"
+                      style={{ color: "#C8A24A" }}
+                    >
+                      Core Definition
+                    </p>
+                    <p className="text-sm font-mono text-white">
+                      A trajectory <em>x(t)</em> evolving on a high-dimensional
+                      manifold <em>ℳ</em> with structured subspaces and cyclic
+                      flows
+                    </p>
+                  </div>
+
+                  <p className="text-sm font-bold text-white mb-4">
+                    Five Structural Layers of DCFM:
+                  </p>
+                  <div className="space-y-3">
+                    {[
+                      {
+                        num: "1",
+                        title: "Base Layer — Attractor Manifold",
+                        subtitle: "Inherits FAM",
+                        color: "#4A9EFF",
+                        items: [
+                          "State space and attractor basins",
+                          "Energy landscape with stability regions",
+                          "Full scientific validity from FAM preserved",
+                        ],
+                      },
+                      {
+                        num: "2",
+                        title: "Fiber Structure — Cyclic Subspaces",
+                        subtitle: "Formalizes CHOM's torus insight",
+                        color: "#34D399",
+                        items: [
+                          "Cyclic dimensions attached at every point",
+                          "Memory loop, prediction loop, emotional loop",
+                          "Formalizes how cognition recurs and reinforces",
+                        ],
+                      },
+                      {
+                        num: "3",
+                        title: "Flow Rule — Nonlinear Dynamic Field",
+                        subtitle: "CHOM's oloid principle, mathematized",
+                        color: "#FFB347",
+                        items: [
+                          "Vector field F(x) governing all mental motion",
+                          "Continuous, non-stationary, metastable dynamics",
+                          "Captures orientation-free cognitive flow",
+                        ],
+                      },
+                      {
+                        num: "4",
+                        title: "Curvature — Hyperbolic Geometry",
+                        subtitle: "Supports hierarchy and abstraction",
+                        color: "#A78BFA",
+                        items: [
+                          "Negative curvature for hierarchical scaling",
+                          "Abstraction layers emerge naturally",
+                          "Tree-like cognitive structures fit hyperbolic space",
+                        ],
+                      },
+                      {
+                        num: "5",
+                        title: "Decision Boundaries",
+                        subtitle: "Links to Drift Diffusion Model",
+                        color: "#FF6B8A",
+                        items: [
+                          "Decisions occur at bifurcation boundaries",
+                          "Trajectory crossing = commitment moment",
+                          "Formally connects to established DDM literature",
+                        ],
+                      },
+                    ].map((layer) => (
+                      <div
+                        key={layer.num}
+                        className="rounded-xl p-4"
+                        style={{
+                          background: `${layer.color}10`,
+                          border: `1px solid ${layer.color}30`,
+                        }}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <span
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                            style={{
+                              background: layer.color,
+                              color: "#0D2B1E",
+                            }}
+                          >
+                            {layer.num}
+                          </span>
+                          <div>
+                            <span className="text-sm font-bold text-white">
+                              {layer.title}
+                            </span>
+                            <span
+                              className="ml-2 text-xs"
+                              style={{ color: layer.color }}
+                            >
+                              — {layer.subtitle}
+                            </span>
+                          </div>
+                        </div>
+                        <ul className="space-y-1 pl-8">
+                          {layer.items.map((item) => (
+                            <li
+                              key={item}
+                              className="text-xs"
+                              style={{ color: "#B8D4B8" }}
+                            >
+                              › {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div
+                    className="mt-6 rounded-xl p-5"
+                    style={{
+                      background: "rgba(200,162,74,0.08)",
+                      border: "1px solid rgba(200,162,74,0.25)",
+                    }}
+                  >
+                    <p
+                      className="text-sm leading-relaxed italic text-center"
+                      style={{ color: "#E8C96A" }}
+                    >
+                      &ldquo;We extend the folded attractor manifold into a
+                      dynamic cognitive field by introducing cyclic fiber
+                      structures and nonlinear flow dynamics, enabling a more
+                      complete representation of how human decisions emerge and
+                      evolve.&rdquo;
+                    </p>
+                    <p
+                      className="text-xs text-center mt-2"
+                      style={{ color: "#8FB08F" }}
+                    >
+                      — Sathish Sampath, Founder of DCFM
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 5 — FAM vs DCFM Comparison */}
+              <section>
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <span
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
+                    style={{
+                      background: "rgba(200,162,74,0.2)",
+                      color: "#C8A24A",
+                    }}
+                  >
+                    ⚖
+                  </span>
+                  FAM vs DCFM: Side-by-Side Comparison
+                </h3>
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{ border: "1px solid rgba(255,255,255,0.1)" }}
+                >
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr style={{ background: "rgba(200,162,74,0.15)" }}>
+                        <th
+                          className="text-left px-5 py-3 font-semibold"
+                          style={{ color: "#C8A24A" }}
+                        >
+                          Feature
+                        </th>
+                        <th
+                          className="text-center px-5 py-3 font-semibold"
+                          style={{ color: "#4A9EFF" }}
+                        >
+                          FAM
+                        </th>
+                        <th
+                          className="text-center px-5 py-3 font-semibold"
+                          style={{ color: "#34D399" }}
+                        >
+                          DCFM
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        ["Attractors", "✔", "✔", true, true],
+                        ["High-dimensional", "✔", "✔", true, true],
+                        ["Cyclic cognition", "✗", "✔", false, true],
+                        ["Continuous flow modeling", "Weak", "✔", false, true],
+                        [
+                          "Hierarchical geometry",
+                          "Implicit",
+                          "Explicit ✔",
+                          false,
+                          true,
+                        ],
+                        [
+                          "Decision boundaries",
+                          "Partial",
+                          "Explicit ✔",
+                          false,
+                          true,
+                        ],
+                      ].map(([feature, fam, dcfm, famOk, dcfmOk], i) => (
+                        <tr
+                          key={String(feature)}
+                          style={{
+                            background:
+                              i % 2 === 0
+                                ? "rgba(255,255,255,0.02)"
+                                : "rgba(255,255,255,0.04)",
+                            borderBottom: "1px solid rgba(255,255,255,0.05)",
+                          }}
+                        >
+                          <td
+                            className="px-5 py-3 font-medium"
+                            style={{ color: "#E8F5E9" }}
+                          >
+                            {String(feature)}
+                          </td>
+                          <td
+                            className="px-5 py-3 text-center font-semibold"
+                            style={{ color: famOk ? "#34D399" : "#FF6B8A" }}
+                          >
+                            {String(fam)}
+                          </td>
+                          <td
+                            className="px-5 py-3 text-center font-semibold"
+                            style={{ color: dcfmOk ? "#34D399" : "#FF6B8A" }}
+                          >
+                            {String(dcfm)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              {/* Section 6 — What DCFM Makes Measurable */}
+              <section>
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <span
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
+                    style={{
+                      background: "rgba(52,211,153,0.2)",
+                      color: "#34D399",
+                    }}
+                  >
+                    📐
+                  </span>
+                  What DCFM Makes Measurable
+                </h3>
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{ border: "1px solid rgba(255,255,255,0.1)" }}
+                >
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr style={{ background: "rgba(52,211,153,0.1)" }}>
+                        <th
+                          className="text-left px-5 py-3 font-semibold"
+                          style={{ color: "#34D399" }}
+                        >
+                          Human Concept
+                        </th>
+                        <th
+                          className="text-left px-5 py-3 font-semibold"
+                          style={{ color: "#C8A24A" }}
+                        >
+                          Mapping in DCFM
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        ["Emotion", "Vector magnitude"],
+                        ["Decision", "Boundary crossing"],
+                        ["Habit", "Attractor depth"],
+                        ["Personality", "Preferred trajectories"],
+                        ["Influence", "Perturbation of vector field"],
+                      ].map(([concept, mapping], i) => (
+                        <tr
+                          key={String(concept)}
+                          style={{
+                            background:
+                              i % 2 === 0
+                                ? "rgba(255,255,255,0.02)"
+                                : "rgba(255,255,255,0.04)",
+                            borderBottom: "1px solid rgba(255,255,255,0.05)",
+                          }}
+                        >
+                          <td
+                            className="px-5 py-3 font-medium"
+                            style={{ color: "#E8F5E9" }}
+                          >
+                            {String(concept)}
+                          </td>
+                          <td
+                            className="px-5 py-3"
+                            style={{ color: "#C8A24A" }}
+                          >
+                            {String(mapping)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              {/* Section 7 — HDA Mapped onto DCFM */}
+              <section>
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <span
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
+                    style={{
+                      background: "rgba(167,139,250,0.2)",
+                      color: "#A78BFA",
+                    }}
+                  >
+                    🗺
+                  </span>
+                  Human Decision Architecture Mapped onto DCFM
+                </h3>
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{ border: "1px solid rgba(167,139,250,0.25)" }}
+                >
+                  <img
+                    src="/assets/uploads/Screenshot-2026-03-20-at-3.28.29-PM-1.png"
+                    alt="Human Decision Architecture (HDA) mapped onto DCFM"
+                    className="w-full object-contain"
+                    style={{ maxHeight: "500px", background: "#0D2B1E" }}
+                  />
+                  <div
+                    className="px-5 py-3 text-center text-sm"
+                    style={{
+                      background: "rgba(167,139,250,0.07)",
+                      color: "#A78BFA",
+                      borderTop: "1px solid rgba(167,139,250,0.2)",
+                    }}
+                  >
+                    <em>
+                      Human Decision Architecture (HDA) mapped onto DCFM —
+                      showing how each decision layer sits within the manifold
+                    </em>
+                  </div>
+                </div>
+              </section>
+
+              {/* Modal Footer */}
+              <section>
+                <div
+                  className="rounded-2xl p-6 text-center"
+                  style={{
+                    background: "linear-gradient(135deg, #1B4332, #0D2B1E)",
+                    border: "2px solid rgba(200,162,74,0.35)",
+                  }}
+                >
+                  <div className="text-3xl mb-3">🌟</div>
+                  <p className="text-sm font-semibold text-white mb-1">
+                    DCFM is an original invention by{" "}
+                    <span style={{ color: "#C8A24A" }}>Sathish Sampath</span>,
+                    Human Decision Architect &amp; CEO of MESMA.
+                  </p>
+                  <p className="text-sm mb-3" style={{ color: "#B8D4B8" }}>
+                    elidi — the assessment platform built on DCFM — is under
+                    active patent filing and protection.
+                  </p>
+                  <a
+                    href="https://www.mesmalab.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm font-semibold hover:opacity-80 transition-opacity"
+                    style={{ color: "#C8A24A" }}
+                  >
+                    Visit mesmalab.com →
+                  </a>
+                </div>
+              </section>
+
+              <div className="h-4" />
+            </div>
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function StageBox({
+  label,
+  desc,
+  color,
+}: { label: string; desc: string; color: string }) {
+  return (
+    <div
+      className="w-28 rounded-xl px-3 py-2 text-center"
+      style={{ background: `${color}15`, border: `1.5px solid ${color}40` }}
+    >
+      <div className="text-base font-bold" style={{ color }}>
+        {label}
+      </div>
+      <div className="text-xs" style={{ color: "#8FB08F" }}>
+        {desc}
+      </div>
+    </div>
+  );
+}
+
+function StageBadge({
+  number,
+  label,
+  color,
+}: { number: string; label: string; color: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span
+        className="text-xs font-bold tracking-widest px-3 py-1 rounded-full"
+        style={{
+          background: `${color}20`,
+          color,
+          border: `1px solid ${color}40`,
+        }}
+      >
+        {number}
+      </span>
+      <span className="text-sm font-semibold" style={{ color: "#8FB08F" }}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function FeatureList({
+  title,
+  color,
+  items,
+}: { title: string; color: string; items: string[] }) {
+  return (
+    <div
+      className="rounded-xl p-4"
+      style={{
+        background: `${color}08`,
+        border: `1px solid ${color}20`,
+      }}
+    >
+      <p className="text-xs font-bold mb-2" style={{ color }}>
+        {title}
+      </p>
+      <ul className="space-y-1.5">
+        {items.map((item) => (
+          <li
+            key={item}
+            className="flex items-start gap-2 text-xs"
+            style={{ color: "#B8D4B8" }}
+          >
+            <span style={{ color }}>›</span>
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function HowItWorksPage({ onNavigate }: HowItWorksPageProps) {
+  const [dcfmModalOpen, setDcfmModalOpen] = useState(false);
+
   return (
     <div
       className="min-h-screen"
@@ -224,6 +991,147 @@ export function HowItWorksPage({ onNavigate }: HowItWorksPageProps) {
             seven-stage assessment pipeline that produces your most precise
             cognitive decision profile ever.
           </p>
+        </div>
+      </section>
+
+      {/* ═══ DCFM ORIGIN SECTION ═══ */}
+      <section className="px-6 pb-12">
+        <div className="max-w-5xl mx-auto">
+          <div
+            className="rounded-3xl p-8 relative overflow-hidden"
+            style={{
+              background:
+                "linear-gradient(135deg, #1B4332 0%, #0D2B1E 60%, #1a3a28 100%)",
+              border: "2px solid rgba(200,162,74,0.4)",
+            }}
+          >
+            {/* Background decoration */}
+            <div
+              className="absolute top-0 right-0 w-72 h-72 pointer-events-none opacity-10"
+              style={{
+                background:
+                  "radial-gradient(circle, #C8A24A 0%, transparent 70%)",
+                transform: "translate(20%, -20%)",
+              }}
+            />
+            <div
+              className="absolute bottom-0 left-0 w-48 h-48 pointer-events-none opacity-5"
+              style={{
+                background:
+                  "radial-gradient(circle, #34D399 0%, transparent 70%)",
+                transform: "translate(-20%, 20%)",
+              }}
+            />
+
+            <div className="relative flex flex-col md:flex-row items-center gap-8">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-4 flex-wrap">
+                  <div
+                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase"
+                    style={{
+                      background: "rgba(200,162,74,0.2)",
+                      color: "#C8A24A",
+                      border: "1px solid rgba(200,162,74,0.4)",
+                    }}
+                  >
+                    🔬 Original Invention
+                  </div>
+                  <div
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
+                    style={{
+                      background: "rgba(255,107,138,0.15)",
+                      color: "#FF6B8A",
+                      border: "1px solid rgba(255,107,138,0.35)",
+                    }}
+                  >
+                    ⚖️ Patent Pending
+                  </div>
+                </div>
+
+                <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 leading-tight">
+                  What is DCFM?
+                </h2>
+                <p
+                  className="text-sm leading-relaxed mb-3"
+                  style={{ color: "#B8D4B8" }}
+                >
+                  The{" "}
+                  <strong className="text-white">
+                    Dynamic Cognitive Field Manifold (DCFM)
+                  </strong>{" "}
+                  is an original scientific invention by{" "}
+                  <strong style={{ color: "#C8A24A" }}>
+                    Sathish Sampath &amp; MESMA
+                  </strong>
+                  . It is the mathematical backbone of the elidi assessment — a
+                  formal model that maps the mind as a high-dimensional manifold
+                  with cyclic fiber structures, nonlinear flow dynamics, and
+                  explicit decision boundaries.
+                </p>
+                <p
+                  className="text-sm leading-relaxed mb-6"
+                  style={{ color: "#8FB08F" }}
+                >
+                  DCFM evolved through three stages: starting from the
+                  established FAM model, through Sathish's creative synthesis
+                  called CHOM, into the formally defined DCFM — the most
+                  complete mathematical architecture for human decision
+                  intelligence ever formulated.
+                </p>
+
+                <div className="flex flex-wrap gap-3 mb-6">
+                  {[
+                    "FAM → CHOM → DCFM",
+                    "Cyclic Fiber Structures",
+                    "Nonlinear Flow Dynamics",
+                    "Decision Boundaries",
+                  ].map((tag) => (
+                    <span
+                      key={tag}
+                      className="text-xs px-3 py-1 rounded-full"
+                      style={{
+                        background: "rgba(200,162,74,0.1)",
+                        color: "#C8A24A",
+                        border: "1px solid rgba(200,162,74,0.25)",
+                      }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setDcfmModalOpen(true)}
+                  className="group inline-flex items-center gap-3 px-6 py-3.5 rounded-xl font-bold text-sm transition-all hover:scale-105 active:scale-95 shadow-lg"
+                  style={{
+                    background: "linear-gradient(135deg, #C8A24A, #E8C96A)",
+                    color: "#0D2B1E",
+                  }}
+                  data-ocid="dcfm_origin.open_modal_button"
+                >
+                  <span className="text-lg">🧬</span>
+                  Explore the Full FAM → CHOM → DCFM Story
+                  <span className="transition-transform group-hover:translate-x-1">
+                    →
+                  </span>
+                </button>
+              </div>
+
+              {/* Mini visual summary */}
+              <div className="flex-shrink-0 hidden md:flex flex-col items-center gap-3">
+                <StageBox label="FAM" desc="Foundation" color="#4A9EFF" />
+                <div className="text-xl" style={{ color: "#8FB08F" }}>
+                  ↓
+                </div>
+                <StageBox label="CHOM" desc="Synthesis" color="#FFB347" />
+                <div className="text-xl" style={{ color: "#8FB08F" }}>
+                  ↓
+                </div>
+                <StageBox label="DCFM" desc="Breakthrough" color="#C8A24A" />
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -845,7 +1753,7 @@ export function HowItWorksPage({ onNavigate }: HowItWorksPageProps) {
                 Human Decision Architect | Mind Hack Specialist | CEO, MESMA
               </div>
               <p
-                className="text-sm leading-relaxed mb-6"
+                className="text-sm leading-relaxed mb-4"
                 style={{ color: "#B8D4B8" }}
               >
                 Sathish Sampath created HDA-DCFM to bridge the gap between
@@ -858,6 +1766,18 @@ export function HowItWorksPage({ onNavigate }: HowItWorksPageProps) {
                 Public Health, Sathish brings unparalleled depth and credibility
                 to every dimension of the elidi platform.
               </p>
+              <div
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold mb-6"
+                style={{
+                  background: "rgba(255,107,138,0.12)",
+                  color: "#FF6B8A",
+                  border: "1px solid rgba(255,107,138,0.25)",
+                }}
+              >
+                ⚖️ Inventor of DCFM — Patent Filing in Progress by Sathish
+                Sampath &amp; MESMA
+              </div>
+              <br />
               <button
                 type="button"
                 onClick={() => onNavigate("assessment")}
@@ -913,6 +1833,12 @@ export function HowItWorksPage({ onNavigate }: HowItWorksPageProps) {
           caffeine.ai
         </a>
       </footer>
+
+      {/* DCFM Origin Modal */}
+      <DCFMOriginModal
+        open={dcfmModalOpen}
+        onClose={() => setDcfmModalOpen(false)}
+      />
     </div>
   );
 }

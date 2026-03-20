@@ -1,9 +1,18 @@
+import { useState } from "react";
+
 interface NavbarProps {
   onNavigate: (page: string) => void;
   transparent?: boolean;
 }
 
 export function Navbar({ onNavigate, transparent = false }: NavbarProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const navigate = (page: string) => {
+    setMenuOpen(false);
+    onNavigate(page);
+  };
+
   return (
     <header
       className={`sticky top-0 z-50 w-full ${
@@ -15,7 +24,7 @@ export function Navbar({ onNavigate, transparent = false }: NavbarProps) {
         {/* Logo */}
         <button
           type="button"
-          onClick={() => onNavigate("landing")}
+          onClick={() => navigate("landing")}
           className="flex items-center gap-3 group"
           data-ocid="nav.link"
         >
@@ -86,11 +95,11 @@ export function Navbar({ onNavigate, transparent = false }: NavbarProps) {
           </div>
         </button>
 
-        {/* Nav links */}
+        {/* Desktop Nav links */}
         <nav className="hidden md:flex items-center gap-8">
           <button
             type="button"
-            onClick={() => onNavigate("landing")}
+            onClick={() => navigate("landing")}
             className="text-white/70 hover:text-white text-sm font-medium transition-colors"
             data-ocid="nav.link"
           >
@@ -98,7 +107,7 @@ export function Navbar({ onNavigate, transparent = false }: NavbarProps) {
           </button>
           <button
             type="button"
-            onClick={() => onNavigate("dimensions")}
+            onClick={() => navigate("dimensions")}
             className="text-white/70 hover:text-white text-sm font-medium transition-colors"
             data-ocid="nav.link"
           >
@@ -106,7 +115,7 @@ export function Navbar({ onNavigate, transparent = false }: NavbarProps) {
           </button>
           <button
             type="button"
-            onClick={() => onNavigate("howitworks")}
+            onClick={() => navigate("howitworks")}
             className="text-white/70 hover:text-white text-sm font-medium transition-colors"
             data-ocid="nav.link"
           >
@@ -114,17 +123,69 @@ export function Navbar({ onNavigate, transparent = false }: NavbarProps) {
           </button>
         </nav>
 
-        {/* CTA */}
-        <button
-          type="button"
-          onClick={() => onNavigate("assessment")}
-          className="px-5 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
-          style={{ backgroundColor: "#C8A24A", color: "#1B4332" }}
-          data-ocid="nav.primary_button"
-        >
-          Start Assessment
-        </button>
+        {/* Right side: CTA + hamburger */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate("assessment")}
+            className="px-5 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
+            style={{ backgroundColor: "#C8A24A", color: "#1B4332" }}
+            data-ocid="nav.primary_button"
+          >
+            Start Assessment
+          </button>
+
+          {/* Hamburger button - mobile only */}
+          <button
+            type="button"
+            className="md:hidden flex flex-col justify-center items-center w-9 h-9 gap-1.5 rounded-lg hover:bg-white/10 transition-colors"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle menu"
+          >
+            <span
+              className={`block w-5 h-0.5 bg-white transition-all duration-300 ${menuOpen ? "rotate-45 translate-y-2" : ""}`}
+            />
+            <span
+              className={`block w-5 h-0.5 bg-white transition-all duration-300 ${menuOpen ? "opacity-0" : ""}`}
+            />
+            <span
+              className={`block w-5 h-0.5 bg-white transition-all duration-300 ${menuOpen ? "-rotate-45 -translate-y-2" : ""}`}
+            />
+          </button>
+        </div>
       </div>
+
+      {/* Mobile dropdown menu */}
+      {menuOpen && (
+        <div
+          className="md:hidden border-t border-white/10"
+          style={{ backgroundColor: "#1B4332" }}
+        >
+          <nav className="flex flex-col px-6 py-4 gap-1">
+            <button
+              type="button"
+              onClick={() => navigate("landing")}
+              className="text-left text-white/80 hover:text-white hover:bg-white/10 text-sm font-medium px-3 py-3 rounded-lg transition-colors"
+            >
+              Home
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("dimensions")}
+              className="text-left text-white/80 hover:text-white hover:bg-white/10 text-sm font-medium px-3 py-3 rounded-lg transition-colors"
+            >
+              Dimensions
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("howitworks")}
+              className="text-left text-white/80 hover:text-white hover:bg-white/10 text-sm font-medium px-3 py-3 rounded-lg transition-colors"
+            >
+              How It Works
+            </button>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
