@@ -19,7 +19,6 @@ export function Navbar({ onNavigate, transparent = false }: NavbarProps) {
           className="flex items-center gap-3 group"
           data-ocid="nav.link"
         >
-          {/* elidi sun icon */}
           <svg
             width="38"
             height="38"
@@ -27,7 +26,6 @@ export function Navbar({ onNavigate, transparent = false }: NavbarProps) {
             fill="none"
             aria-hidden="true"
           >
-            {/* Outer glow ring */}
             <circle
               cx="19"
               cy="19"
@@ -36,7 +34,6 @@ export function Navbar({ onNavigate, transparent = false }: NavbarProps) {
               stroke="rgba(200,162,74,0.35)"
               strokeWidth="1.2"
             />
-            {/* Sun rays */}
             {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => {
               const rad = (deg * Math.PI) / 180;
               const x1 = 19 + Math.cos(rad) * 11;
@@ -57,9 +54,7 @@ export function Navbar({ onNavigate, transparent = false }: NavbarProps) {
                 />
               );
             })}
-            {/* Inner sun circle */}
             <circle cx="19" cy="19" r="7" fill="#C8A24A" opacity="0.9" />
-            {/* Letter e */}
             <text
               x="19"
               y="23"
@@ -99,11 +94,11 @@ export function Navbar({ onNavigate, transparent = false }: NavbarProps) {
             className="text-white/70 hover:text-white text-sm font-medium transition-colors"
             data-ocid="nav.link"
           >
-            About
+            Home
           </button>
           <button
             type="button"
-            onClick={() => onNavigate("landing")}
+            onClick={() => onNavigate("dimensions")}
             className="text-white/70 hover:text-white text-sm font-medium transition-colors"
             data-ocid="nav.link"
           >
@@ -111,7 +106,7 @@ export function Navbar({ onNavigate, transparent = false }: NavbarProps) {
           </button>
           <button
             type="button"
-            onClick={() => onNavigate("landing")}
+            onClick={() => onNavigate("howitworks")}
             className="text-white/70 hover:text-white text-sm font-medium transition-colors"
             data-ocid="nav.link"
           >

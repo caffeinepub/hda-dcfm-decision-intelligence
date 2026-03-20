@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { Navbar } from "./components/Navbar";
 import { AssessmentPage } from "./pages/AssessmentPage";
+import { DimensionsPage } from "./pages/DimensionsPage";
+import { HowItWorksPage } from "./pages/HowItWorksPage";
 import { LandingPage } from "./pages/LandingPage";
 import { LearnMorePage } from "./pages/LearnMorePage";
 import { ReportPage } from "./pages/ReportPage";
@@ -9,7 +11,14 @@ import { ResultsPage } from "./pages/ResultsPage";
 
 const queryClient = new QueryClient();
 
-type Page = "landing" | "assessment" | "results" | "report" | "learnmore";
+type Page =
+  | "landing"
+  | "assessment"
+  | "results"
+  | "report"
+  | "learnmore"
+  | "dimensions"
+  | "howitworks";
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
@@ -19,7 +28,12 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const showNavbar = currentPage === "landing" || currentPage === "learnmore";
+  const showNavbar = [
+    "landing",
+    "learnmore",
+    "dimensions",
+    "howitworks",
+  ].includes(currentPage);
 
   return (
     <div className="min-h-screen">
@@ -28,6 +42,12 @@ function AppContent() {
       {currentPage === "landing" && <LandingPage onNavigate={handleNavigate} />}
       {currentPage === "learnmore" && (
         <LearnMorePage onNavigate={handleNavigate} />
+      )}
+      {currentPage === "dimensions" && (
+        <DimensionsPage onNavigate={handleNavigate} />
+      )}
+      {currentPage === "howitworks" && (
+        <HowItWorksPage onNavigate={handleNavigate} />
       )}
       {currentPage === "assessment" && (
         <AssessmentPage onNavigate={handleNavigate} />

@@ -693,15 +693,13 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 }}
               >
                 <img
-                  src="/assets/uploads/SATHISH-SAMPATH11-2-1.jpg"
+                  src="/assets/uploads/05-2-1.jpg"
                   alt="Sathish Sampath"
                   className="rounded-2xl object-cover"
                   style={{
                     width: "200px",
                     height: "260px",
                     objectPosition: "50% 10%",
-                    transform: "scale(1.5)",
-                    transformOrigin: "50% 10%",
                   }}
                 />
               </div>
