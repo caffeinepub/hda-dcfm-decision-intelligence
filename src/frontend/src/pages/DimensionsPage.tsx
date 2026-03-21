@@ -573,10 +573,13 @@ export function DimensionsPage({ onNavigate }: DimensionsPageProps) {
               >
                 Sathish Sampath is the original architect of all six HDA-DCFM
                 dimensions, synthesizing over two decades of research in
-                behavioral psychology, neuroscience, and hypnotherapy into a
-                unified assessment framework. As an international keynote
-                speaker, FRSPH fellow, award-winning author, and CEO of MESMA,
-                he has applied these dimensions across 500+ corporate
+                behavioral psychology, neuroscience, Licensed Psychology and
+                Hypnotherapy, and Decision Science for Business into a unified
+                assessment framework. His work spans Sales, Marketing, Branding,
+                and GTM Strategies, as well as personal transformation through
+                building inner strength for outer shine. As an international
+                keynote speaker, FRSPH fellow, award-winning author, and CEO of
+                MESMA, he has applied these dimensions across 500+ corporate
                 assessments in 12 countries — transforming how organizations
                 understand and develop decision intelligence at scale.
               </p>

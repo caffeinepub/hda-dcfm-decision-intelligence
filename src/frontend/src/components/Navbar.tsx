@@ -95,8 +95,8 @@ export function Navbar({ onNavigate, transparent = false }: NavbarProps) {
           </div>
         </button>
 
-        {/* Desktop Nav links */}
-        <nav className="hidden md:flex items-center gap-8">
+        {/* Desktop Nav */}
+        <nav className="hidden md:flex items-center gap-6">
           <button
             type="button"
             onClick={() => navigate("landing")}
@@ -121,21 +121,32 @@ export function Navbar({ onNavigate, transparent = false }: NavbarProps) {
           >
             How It Works
           </button>
+          <button
+            type="button"
+            onClick={() => navigate("myDecisionTwin")}
+            className="text-sm font-semibold px-3 py-1.5 rounded-lg transition-all hover:opacity-90"
+            style={{
+              backgroundColor: "rgba(200,162,74,0.15)",
+              color: "#C8A24A",
+              border: "1px solid rgba(200,162,74,0.35)",
+            }}
+            data-ocid="nav.link"
+          >
+            My Decision Twin
+          </button>
         </nav>
 
-        {/* Right side: CTA + hamburger */}
+        {/* Right side */}
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => navigate("assessment")}
-            className="px-5 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
+            className="hidden sm:block px-5 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
             style={{ backgroundColor: "#C8A24A", color: "#1B4332" }}
             data-ocid="nav.primary_button"
           >
             Start Assessment
           </button>
-
-          {/* Hamburger button - mobile only */}
           <button
             type="button"
             className="md:hidden flex flex-col justify-center items-center w-9 h-9 gap-1.5 rounded-lg hover:bg-white/10 transition-colors"
@@ -155,7 +166,7 @@ export function Navbar({ onNavigate, transparent = false }: NavbarProps) {
         </div>
       </div>
 
-      {/* Mobile dropdown menu */}
+      {/* Mobile dropdown */}
       {menuOpen && (
         <div
           className="md:hidden border-t border-white/10"
@@ -182,6 +193,21 @@ export function Navbar({ onNavigate, transparent = false }: NavbarProps) {
               className="text-left text-white/80 hover:text-white hover:bg-white/10 text-sm font-medium px-3 py-3 rounded-lg transition-colors"
             >
               How It Works
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("myDecisionTwin")}
+              className="text-left text-sm font-semibold px-3 py-3 rounded-lg transition-colors"
+              style={{ color: "#C8A24A" }}
+            >
+              My Decision Twin
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("assessment")}
+              className="text-left text-white/80 hover:text-white hover:bg-white/10 text-sm font-medium px-3 py-3 rounded-lg transition-colors"
+            >
+              Start Assessment
             </button>
           </nav>
         </div>

@@ -45,8 +45,8 @@ const ROLE_TAGS = [
   "Human Decision Architect",
   "Mind Hack Specialist",
   "CEO, MESMA",
-  "Certified Social Behaviour Psychologist",
-  "Hypnotherapist",
+  "Licensed Psychologist (Hypnotherapist)",
+  "Behavioural Psychology Researcher",
   "International Keynote Speaker",
   "Award-Winning Author",
   "Fellow of Royal Society for Public Health",
@@ -211,7 +211,7 @@ export function LearnMorePage({ onNavigate }: LearnMorePageProps) {
               The <span style={{ color: "#C8A24A" }}>HDA-DCFM</span> Framework
             </h1>
             <p className="text-xl text-white/60 mb-4 font-medium">
-              Human Decision Architecture – Decision Cognitive Force Mapping
+              Human Decision Architecture – Dynamic Cognitive Field Manifold
             </p>
             <p className="text-lg text-white/50 max-w-2xl mx-auto leading-relaxed">
               A pioneering framework that maps and measures the invisible
@@ -250,7 +250,7 @@ export function LearnMorePage({ onNavigate }: LearnMorePageProps) {
               </p>
               <p>
                 <strong style={{ color: "#081C2F" }}>
-                  Decision Cognitive Force Mapping (DCFM)
+                  Dynamic Cognitive Field Manifold (DCFM)
                 </strong>{" "}
                 is the measurement layer — a psychometric framework that
                 quantifies these forces across 6 dimensions: PM (Process
@@ -417,10 +417,13 @@ export function LearnMorePage({ onNavigate }: LearnMorePageProps) {
                       1,000+ guest lectures, training sessions, and keynotes
                     </strong>{" "}
                     for students, employees, and leaders across the globe on the
-                    3Ms — Management, Marketing &amp; Mindfulness. As a
-                    Certified Social Behaviour Psychologist and Hypnotherapist,
-                    he conducts deep research in the field of Decision Making
-                    and the influencing factors of the Human Mind.
+                    3Ms — Management, Marketing &amp; Mindfulness. As a Licensed
+                    Psychologist (Hypnotherapist) and Behavioural Psychology
+                    Researcher, he conducts extensive research in Understanding
+                    Decision Science for Business — spanning Sales, Marketing,
+                    Branding, and GTM Strategies — and in personal
+                    transformation through building inner strength for outer
+                    shine.
                   </p>
                   <p>
                     He recently added a Diploma in International Diplomacy,
@@ -432,6 +435,23 @@ export function LearnMorePage({ onNavigate }: LearnMorePageProps) {
                     </strong>{" "}
                     that powers elidi — the world's first psychometric system to
                     map cognitive decision forces across six dimensions.
+                  </p>
+                  <p
+                    className="text-base leading-relaxed mt-4"
+                    style={{ color: "#B8D4B8" }}
+                  >
+                    Prior to elidi, Sathish has been part of groundbreaking
+                    research initiatives —{" "}
+                    <strong className="text-white">Project MESMA</strong>{" "}
+                    (world&apos;s first Neurovisceral Model based Human
+                    Emotional Companion),{" "}
+                    <strong className="text-white">NeuroStill</strong>,{" "}
+                    <strong className="text-white">
+                      Cognitive Terraforming
+                    </strong>
+                    , and{" "}
+                    <strong className="text-white">Project Future Human</strong>
+                    . These are research-based projects with IP tagged to MESMA.
                   </p>
                 </div>
 

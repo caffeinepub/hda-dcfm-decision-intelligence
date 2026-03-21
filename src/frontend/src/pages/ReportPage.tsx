@@ -7,9 +7,12 @@ import {
   DIMENSIONS,
   DIMENSION_LABELS,
   DIMENSION_SHORT,
+  computeAuthenticity,
+  getArchetypeToAvoid,
+  getDimensionDeepDetail,
   getDimensionInterpretation,
   getOverallAverage,
-  getRecommendations,
+  getPersonalizedRecommendations,
 } from "../scoring";
 
 interface StoredResults {
@@ -732,7 +735,13 @@ export function ReportPage({ onNavigate }: ReportPageProps) {
 
   const { responses, scores, archetype, forceLevel, responseTimes } = results;
   const avg = getOverallAverage(scores);
-  const recommendations = getRecommendations(scores);
+  // recommendations kept for backwards compat; personalizedRecs used below
+  // const recommendations = getRecommendations(scores);
+  const authenticity = computeAuthenticity(responses, responseTimes);
+  const personalizedRecs = getPersonalizedRecommendations(
+    scores,
+    authenticity.tier,
+  );
   const printDate = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -882,7 +891,66 @@ export function ReportPage({ onNavigate }: ReportPageProps) {
               </p>
             </div>
           </div>
+
+          {/* Response Reliability Badge */}
+          <div className="mt-4 flex justify-center">
+            <div
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border"
+              style={{
+                borderColor: authenticity.color,
+                background: `${authenticity.color}15`,
+              }}
+            >
+              <span
+                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                style={{ background: authenticity.color }}
+              />
+              <span
+                className="text-xs font-medium"
+                style={{ color: authenticity.color }}
+              >
+                Response Reliability: {authenticity.score}/100
+              </span>
+            </div>
+          </div>
+          <p
+            className="text-center text-xs mt-1 opacity-60"
+            style={{ color: "#E8F5E9" }}
+          >
+            {authenticity.summary}
+          </p>
         </motion.div>
+
+        {/* Authenticity-gated personalisation banner */}
+        {authenticity.tier === "high" && (
+          <div
+            className="mx-4 mb-4 p-3 rounded-lg text-center"
+            style={{
+              background: "rgba(0,200,150,0.1)",
+              border: "1px solid rgba(0,200,150,0.3)",
+            }}
+          >
+            <p className="text-xs" style={{ color: "#00C896" }}>
+              ✓ High response authenticity detected — this report is calibrated
+              to your genuine decision patterns
+            </p>
+          </div>
+        )}
+        {authenticity.tier === "low" && (
+          <div
+            className="mx-4 mb-4 p-3 rounded-lg text-center"
+            style={{
+              background: "rgba(231,76,60,0.1)",
+              border: "1px solid rgba(231,76,60,0.3)",
+            }}
+          >
+            <p className="text-xs" style={{ color: "#E74C3C" }}>
+              ⚠ Response patterns suggest rushed input — recommendations are
+              intentionally exploratory. Retaking with more reflection time will
+              unlock deeper personalisation.
+            </p>
+          </div>
+        )}
 
         {/* Radar chart */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
@@ -1030,9 +1098,54 @@ export function ReportPage({ onNavigate }: ReportPageProps) {
                       }}
                     />
                   </div>
-                  <p className="text-sm text-white/60 leading-relaxed">
-                    {getDimensionInterpretation(dim, score)}
-                  </p>
+                  {(() => {
+                    const detail = getDimensionDeepDetail(dim, score);
+                    return (
+                      <>
+                        <p
+                          className="text-sm leading-relaxed mb-4"
+                          style={{ color: "rgba(255,255,255,0.7)" }}
+                        >
+                          {detail.fullInterpretation}
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                          {[
+                            {
+                              label: "Behavioral Signal",
+                              value: detail.signal,
+                            },
+                            { label: "Core Strength", value: detail.strength },
+                            {
+                              label: "Development Focus",
+                              value: detail.developmentFocus,
+                            },
+                          ].map((chip) => (
+                            <div
+                              key={chip.label}
+                              className="flex-1 min-w-[120px] rounded-lg px-3 py-2"
+                              style={{
+                                backgroundColor: "rgba(200,162,74,0.07)",
+                                border: "1px solid rgba(200,162,74,0.15)",
+                              }}
+                            >
+                              <p
+                                className="text-xs font-semibold mb-1 uppercase tracking-wider"
+                                style={{ color: "rgba(200,162,74,0.7)" }}
+                              >
+                                {chip.label}
+                              </p>
+                              <p
+                                className="text-xs"
+                                style={{ color: "rgba(255,255,255,0.8)" }}
+                              >
+                                {chip.value}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </motion.div>
               );
             })}
@@ -1482,6 +1595,43 @@ export function ReportPage({ onNavigate }: ReportPageProps) {
             as a reference point, not a ceiling.
           </p>
 
+          {/* Archetype to Avoid */}
+          {(() => {
+            const toAvoid = getArchetypeToAvoid(scores);
+            return (
+              <div
+                className="mt-4 rounded-xl px-4 py-4"
+                style={{
+                  backgroundColor: "rgba(184,74,56,0.08)",
+                  border: "1px solid rgba(184,74,56,0.25)",
+                }}
+                data-ocid="report.panel"
+              >
+                <p
+                  className="text-sm font-bold mb-1"
+                  style={{ color: "#B84A38" }}
+                >
+                  ⚠ Archetype to Avoid
+                </p>
+                <p className="text-base font-bold text-white mb-0.5">
+                  {toAvoid.label}
+                </p>
+                <p
+                  className="text-xs mb-3"
+                  style={{ color: "rgba(184,74,56,0.75)" }}
+                >
+                  {toAvoid.axes}
+                </p>
+                <p
+                  className="text-sm leading-relaxed"
+                  style={{ color: "rgba(255,255,255,0.7)" }}
+                >
+                  {toAvoid.avoidReason}
+                </p>
+              </div>
+            );
+          })()}
+
           {/* Meet the Archetypes */}
           <div
             className="mt-8 pt-6"
@@ -1592,7 +1742,7 @@ export function ReportPage({ onNavigate }: ReportPageProps) {
             Personalized Recommendations
           </h2>
           <ol className="space-y-4">
-            {recommendations.map((rec, i) => (
+            {personalizedRecs.map((rec, i) => (
               <li
                 key={rec.slice(0, 20)}
                 className="flex gap-4"
@@ -1831,9 +1981,10 @@ export function ReportPage({ onNavigate }: ReportPageProps) {
             Specialist&nbsp;·&nbsp;CEO, MESMA
           </p>
           <p className="text-sm text-white/70 leading-relaxed mb-4">
-            Behavioural Psychology Researcher &amp;
-            Hypnotherapist&nbsp;&nbsp;|&nbsp;&nbsp; International Keynote
-            Speaker&nbsp;&nbsp;|&nbsp;&nbsp;Award-Winning Author
+            Licensed Psychologist
+            (Hypnotherapist)&nbsp;&nbsp;|&nbsp;&nbsp;Behavioural Psychology
+            Researcher&nbsp;&nbsp;|&nbsp;&nbsp;Decision Science for
+            Business&nbsp;&nbsp;|&nbsp;&nbsp;International Keynote Speaker
           </p>
           <p
             className="text-sm italic text-white/60 border-l-2 pl-4"

@@ -1,26 +1,29 @@
-# HDA-DCFM Decision Intelligence — Version 12
+# HDA-DCFM Decision Intelligence — elidi
 
 ## Current State
-- Navbar has 3 links: About (→ landing), Dimensions (→ landing, no page), How It Works (→ landing, no page)
-- App.tsx handles pages: landing, learnmore, assessment, results, report
-- Navbar shown only on landing and learnmore pages
+- MyDecisionTwinPage.tsx: public landing page with hero, 3-step guide, 4 feature cards, CTA
+- UserDashboardPage.tsx: 5-tab dashboard (My Mind Twin, Twin Builder, My Versions, Simulation Lab, Growth Path)
+- Assessment inside dashboard: shows dimension name but no scale legend and no dimension description
+- Admin button: already gated by `isAdmin` check — only admins see it
+- Post-login flow: MyDecisionTwin landing shows one 'Go to Dashboard' button if authenticated
 
 ## Requested Changes (Diff)
 
 ### Add
-- DimensionsPage.tsx: Full scientific deep-dive into the 6 HDA-DCFM decision dimensions (Analytical Clarity, Emotional Intelligence, Risk Orientation, Social Influence, Temporal Thinking, Adaptive Flexibility). Content: neuroscience models, psychological theories (Kahneman System 1/2, Damasio Somatic Marker Hypothesis, Prospect Theory, etc.), real-world examples, research stats, modern SVG-based infographics. Sathish Sampath bio/credit featured.
-- HowItWorksPage.tsx: Explains the HDA-DCFM methodology — how the assessment works, how scoring is computed, what archetypes mean, the science behind the instrument, the MESMA research foundation, practical use cases. Features step-by-step visual flow, neuroscience backing, methodology infographics, and Sathish attribution.
+- Scale legend (1 = Strongly Disagree → 7 = Strongly Agree) above each assessment question set
+- Dimension description/context paragraph before questions for each of the 6 dimensions
+- FAQ/info section on MyDecisionTwinPage covering: training frequency, whether questions are same or varied, what happens to data
+- Expanded tab descriptions on MyDecisionTwinPage (one card per tab with what it is, what you do, what you get)
+- Multiple 'Go to Dashboard' CTA buttons placed throughout MyDecisionTwinPage for authenticated users
 
 ### Modify
-- Navbar.tsx: Rename "About" → "Home"; wire Dimensions → "dimensions" page; wire How It Works → "howitworks" page
-- App.tsx: Add "dimensions" and "howitworks" to Page type; render DimensionsPage and HowItWorksPage; show navbar on these pages
+- MyDecisionTwinPage: richer, more educational post-login guidance; clearer tab-by-tab breakdown
+- Assessment step in dashboard: add scale legend row + dimension description before questions
 
 ### Remove
 - Nothing removed
 
 ## Implementation Plan
-1. Update Navbar to rename About → Home, wire Dimensions and How It Works to correct pages
-2. Update App.tsx to include dimensions and howitworks pages and show navbar on them
-3. Build DimensionsPage with 6 dimension deep-dives, scientific theories, infographics (SVG-based), stats, examples, Sathish credit
-4. Build HowItWorksPage with methodology explanation, scoring science, archetype science, MESMA foundation, step-by-step visual flow, Sathish credit
-5. Validate and deploy
+1. Add `DIMENSION_DESCRIPTIONS` map to scoring.ts (one paragraph per dimension explaining what it measures)
+2. In UserDashboardPage assessment section: render dimension description and scale legend (Strongly Disagree 1 ... 7 Strongly Agree) above the question list
+3. Expand MyDecisionTwinPage: detailed tab cards (5 tabs with icon, name, what you do, what you get), FAQ accordion (training frequency, question variety, data privacy), multiple 'Go to Dashboard' CTAs at hero, after features, at bottom

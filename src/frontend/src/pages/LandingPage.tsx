@@ -724,10 +724,21 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 Specialist&nbsp;&nbsp;·&nbsp;&nbsp;CEO, MESMA
               </p>
               <p className="text-base md:text-lg text-white/75 leading-relaxed mb-10">
-                A behavioural psychology researcher, hypnotherapist,
-                internationally acclaimed Keynote Speaker, and Award-Winning
-                Author — Sathish has spent decades decoding the invisible forces
-                that shape human decisions.{" "}
+                A Licensed Psychologist (Hypnotherapist) and Behavioural
+                Psychology Researcher, internationally acclaimed Keynote
+                Speaker, and Award-Winning Author — Sathish has spent decades
+                decoding the invisible forces that shape human decisions. He
+                extensively works in Understanding Decision Science for Business
+                across Sales, Marketing, Branding, and GTM Strategies, and in
+                personal transformation through building inner strength for
+                outer shine. Prior to elidi, Sathish has been part of
+                groundbreaking research initiatives —{" "}
+                <strong>Project MESMA</strong> (world&apos;s first Neurovisceral
+                Model based Human Emotional Companion),{" "}
+                <strong>NeuroStill</strong>,{" "}
+                <strong>Cognitive Terraforming</strong>, and{" "}
+                <strong>Project Future Human</strong> — research-based projects
+                with IP tagged to MESMA.{" "}
                 <span className="text-white font-medium">
                   elidi is his brainchild
                 </span>

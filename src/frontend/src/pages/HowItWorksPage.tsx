@@ -1761,10 +1761,13 @@ export function HowItWorksPage({ onNavigate }: HowItWorksPageProps) {
                 translating complex cognitive science into a practical,
                 actionable tool for leaders, professionals, and individuals
                 worldwide. As an international keynote speaker with over 1,000
-                talks across 12 countries, a behavioral psychology researcher,
-                clinical hypnotherapist, and Fellow of the Royal Society for
-                Public Health, Sathish brings unparalleled depth and credibility
-                to every dimension of the elidi platform.
+                talks across 12 countries, a Behavioural Psychology Researcher,
+                Licensed Psychologist (Hypnotherapist), and Fellow of the Royal
+                Society for Public Health, with extensive work in Decision
+                Science for Business across Sales, Marketing, Branding, and GTM
+                Strategies, and in personal transformation through building
+                inner strength for outer shine — Sathish brings unparalleled
+                depth and credibility to every dimension of the elidi platform.
               </p>
               <div
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold mb-6"
