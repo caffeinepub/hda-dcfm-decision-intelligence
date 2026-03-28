@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { DynamicRadarChart } from "../components/DynamicRadarChart";
 import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
@@ -93,6 +94,23 @@ type DecisionLogEntry = {
   timestamp: bigint;
 };
 
+function GreenCard({
+  children,
+  className = "",
+}: { children: React.ReactNode; className?: string }) {
+  return (
+    <div
+      className={`rounded-2xl p-6 ${className}`}
+      style={{
+        backgroundColor: "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.1)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function UserDashboardPage({ onNavigate }: Props) {
   const { identity, clear } = useInternetIdentity();
   const { actor } = useActor();
@@ -141,8 +159,20 @@ export function UserDashboardPage({ onNavigate }: Props) {
         interpretation: string;
         time: string;
         stability: string;
+        confidence: string;
+        cognitiveSignals: string[];
+        scenarioInsight: string;
+        scores: {
+          pm: number;
+          em: number;
+          rrm: number;
+          iai: number;
+          sis: number;
+          edi: number;
+        };
       }[]
   >(null);
+  const [simScenario, setSimScenario] = useState("");
 
   // Growth Path
   const [deltaCurrentId, setDeltaCurrentId] = useState<string | null>(null);
@@ -229,7 +259,15 @@ export function UserDashboardPage({ onNavigate }: Props) {
   const handleAsmSubmit = async () => {
     if (!actor) return;
     setAsmSubmitting(true);
-    const scores = computeScores(asmResponses);
+    const rawScores = computeScores(asmResponses);
+    const scores = {
+      pm: rawScores.pm,
+      em: rawScores.em,
+      rrm: rawScores.rrm,
+      iai: rawScores.iai,
+      sis: rawScores.sis,
+      edi: rawScores.edi,
+    };
     const archetype = classifyArchetype(scores);
     const forceLevel = classifyDecisionForce(scores);
     const bigintR = asmResponses.map((r) => BigInt(r));
@@ -241,10 +279,12 @@ export function UserDashboardPage({ onNavigate }: Props) {
         forceLevel,
       );
       await loadAssessments();
+      toast.success("Assessment saved!");
       setShowAssessment(false);
       setAsmResponses(Array(36).fill(0));
       setAsmStep(0);
     } catch (_) {
+      toast.error("Failed to save assessment. Please try again.");
     } finally {
       setAsmSubmitting(false);
     }
@@ -279,9 +319,98 @@ export function UserDashboardPage({ onNavigate }: Props) {
     await loadVersions();
   };
 
+  const classifyScenario = (s: string): string => {
+    const lower = s.toLowerCase();
+    if (/job|career|promotion|resign|work|salary|startup/.test(lower))
+      return "Career";
+    if (/invest|money|financial|loan|stock|business|profit/.test(lower))
+      return "Financial";
+    if (/relation|partner|friend|family|marriage|breakup/.test(lower))
+      return "Relationship";
+    if (/create|design|art|music|write|idea|project/.test(lower))
+      return "Creative";
+    if (/risk|danger|uncertain|venture|gamble/.test(lower)) return "Risk-based";
+    return "Personal";
+  };
+
+  const getCognitiveSignals = (v: TwinVersion): string[] => {
+    const signals: string[] = [];
+    if (v.em >= 6)
+      signals.push(
+        `High Emotional Processing (EM ${v.em.toFixed(1)}) means emotional responses will significantly influence this decision`,
+      );
+    else if (v.em <= 3)
+      signals.push(
+        `Low Emotional Processing (EM ${v.em.toFixed(1)}) allows analytical clarity without emotional interference`,
+      );
+    else
+      signals.push(
+        `Balanced Emotional Processing (EM ${v.em.toFixed(1)}) provides measured emotional input to decisions`,
+      );
+
+    if (v.iai >= 6)
+      signals.push(
+        `Strong Information Analysis (IAI ${v.iai.toFixed(1)}) drives thorough evaluation before committing`,
+      );
+    else if (v.iai <= 3)
+      signals.push(
+        `Limited Information Analysis (IAI ${v.iai.toFixed(1)}) favors intuitive leaps over detailed research`,
+      );
+    else
+      signals.push(
+        `Moderate Information Analysis (IAI ${v.iai.toFixed(1)}) balances research with action`,
+      );
+
+    if (v.sis >= 6)
+      signals.push(
+        `High Social Influence Sensitivity (SIS ${v.sis.toFixed(1)}) means external opinions and social pressure shape outcomes`,
+      );
+    else if (v.sis <= 3)
+      signals.push(
+        `Low Social Influence Sensitivity (SIS ${v.sis.toFixed(1)}) enables independent judgment free from social pressure`,
+      );
+
+    if (v.edi >= 6)
+      signals.push(
+        `Strong Execution Drive (EDI ${v.edi.toFixed(1)}) converts decisions into action swiftly`,
+      );
+    else if (v.edi <= 3)
+      signals.push(
+        `Weak Execution Drive (EDI ${v.edi.toFixed(1)}) may delay follow-through even after deciding`,
+      );
+
+    return signals.slice(0, 4);
+  };
+
+  const getScenarioInsight = (
+    v: TwinVersion,
+    scenarioType: string,
+    force: number,
+  ): string => {
+    const strength =
+      force >= 8
+        ? "high decision force"
+        : force >= 5
+          ? "moderate decision force"
+          : "low decision force";
+    const insightMap: Record<string, string> = {
+      Career: `For a career decision, this version's ${v.iai >= 5 ? "strong analytical ability" : "intuitive style"} will ${v.edi >= 5 ? "drive decisive action" : "require more time to commit"}. The ${v.sis <= 4 ? "low social sensitivity ensures an independent choice" : "high social sensitivity may lead to seeking validation"} before moving forward.`,
+      Financial: `Financial scenarios demand clarity — this version's ${v.pm >= 5 ? "strong pattern mapping" : "pattern recognition gaps"} will ${force >= 6 ? "support confident risk assessment" : "create hesitation around uncertainty"}. ${v.rrm >= 5 ? "Rational reasoning is a key asset here" : "Emotional weight may cloud pure financial logic"}.`,
+      Relationship: `In relational decisions, this version's EM of ${v.em.toFixed(1)} means ${v.em >= 5 ? "feelings take center stage, adding depth but slowing logic" : "rational thinking leads, which can miss emotional nuance"}. ${v.sis >= 5 ? "Social harmony is prioritized, making compromise more likely" : "Independence may override interpersonal compromise"}.`,
+      Creative: `Creative decisions thrive on cognitive flexibility — this version's ${v.iai >= 5 ? "deep analytical capacity helps evaluate creative ideas rigorously" : "intuitive approach fuels spontaneous creative leaps"}. The ${strength} here means ${force >= 6 ? "creative ideas will be acted upon with conviction" : "creative blocks may arise from over-deliberation"}.`,
+      "Risk-based": `Risk scenarios test the balance between courage and caution. This version's ${v.rrm >= 5 ? "strong rational reasoning provides calculated risk assessment" : "limited risk rationalization may lead to avoiding challenges"}. With ${v.edi >= 5 ? "strong execution drive, once committed the action follows through" : "moderate execution drive, partial commitments are possible"}.`,
+      Personal: `For personal decisions, this version processes through a ${v.em >= 5 ? "primarily emotional lens, giving importance to feelings and values" : "primarily analytical lens, prioritizing logic over sentiment"}. ${v.iai >= 5 ? "Deep introspection guides the choice with clarity" : "Faster intuitive decisions may bypass deeper reflection"}.`,
+    };
+    return (
+      insightMap[scenarioType] ||
+      `This version shows ${strength} for this scenario, combining ${v.iai >= 5 ? "analytical depth" : "intuitive speed"} with ${v.edi >= 5 ? "strong execution drive" : "measured action pace"}.`
+    );
+  };
+
   const runSimulation = () => {
     const selected = versions.filter((v) => selectedVersionIds.includes(v.id));
     if (!selected.length) return;
+    const scenarioType = classifyScenario(scenario);
     const results = selected.map((v) => {
       const scores = {
         pm: v.pm,
@@ -292,14 +421,20 @@ export function UserDashboardPage({ onNavigate }: Props) {
         edi: v.edi,
       };
       const force = computeDecisionForce(scores);
+      const confidence = force >= 8 ? "High" : force >= 5 ? "Medium" : "Low";
       return {
         name: v.versionName,
         force: Math.round(force * 100) / 100,
         interpretation: interpretForce(force),
         time: timeToDecision(v.em),
         stability: stabilityRating(v.iai),
+        confidence,
+        cognitiveSignals: getCognitiveSignals(v),
+        scenarioInsight: getScenarioInsight(v, scenarioType, force),
+        scores,
       };
     });
+    setSimScenario(scenario);
     setSimResult(results);
   };
 
@@ -364,21 +499,6 @@ export function UserDashboardPage({ onNavigate }: Props) {
     };
     return tips[dim][dir];
   }
-
-  const GreenCard = ({
-    children,
-    className = "",
-  }: { children: React.ReactNode; className?: string }) => (
-    <div
-      className={`rounded-2xl p-6 ${className}`}
-      style={{
-        backgroundColor: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.1)",
-      }}
-    >
-      {children}
-    </div>
-  );
 
   return (
     <div
@@ -637,60 +757,61 @@ export function UserDashboardPage({ onNavigate }: Props) {
               </GreenCard>
             )}
 
-            {latestScores ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <GreenCard>
-                  <h3 className="font-bold mb-4">Your HDA-DCFM Profile</h3>
-                  <DynamicRadarChart
-                    scores={latestScores as Record<Dimension, number>}
-                  />
-                </GreenCard>
-                <GreenCard>
-                  <h3 className="font-bold mb-4">Dimension Scores</h3>
-                  <div className="space-y-3">
-                    {DIMENSIONS.map((dim) => (
-                      <div key={dim}>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-white/70">
-                            {DIMENSION_SHORT[dim]} — {DIMENSION_LABELS[dim]}
-                          </span>
-                          <span
-                            style={{ color: "#C8A24A" }}
-                            className="font-bold"
-                          >
-                            {(
-                              latestScores[
-                                dim as keyof typeof latestScores
-                              ] as number
-                            ).toFixed(2)}
-                          </span>
+            {!showAssessment &&
+              (latestScores ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <GreenCard>
+                    <h3 className="font-bold mb-4">Your HDA-DCFM Profile</h3>
+                    <DynamicRadarChart
+                      scores={latestScores as Record<Dimension, number>}
+                    />
+                  </GreenCard>
+                  <GreenCard>
+                    <h3 className="font-bold mb-4">Dimension Scores</h3>
+                    <div className="space-y-3">
+                      {DIMENSIONS.map((dim) => (
+                        <div key={dim}>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className="text-white/70">
+                              {DIMENSION_SHORT[dim]} — {DIMENSION_LABELS[dim]}
+                            </span>
+                            <span
+                              style={{ color: "#C8A24A" }}
+                              className="font-bold"
+                            >
+                              {(
+                                latestScores[
+                                  dim as keyof typeof latestScores
+                                ] as number
+                              ).toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="h-2 rounded-full bg-white/10">
+                            <div
+                              className="h-2 rounded-full"
+                              style={{
+                                width: `${((latestScores[dim as keyof typeof latestScores] as number) / 7) * 100}%`,
+                                backgroundColor: "#C8A24A",
+                              }}
+                            />
+                          </div>
                         </div>
-                        <div className="h-2 rounded-full bg-white/10">
-                          <div
-                            className="h-2 rounded-full"
-                            style={{
-                              width: `${((latestScores[dim as keyof typeof latestScores] as number) / 7) * 100}%`,
-                              backgroundColor: "#C8A24A",
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  </GreenCard>
+                </div>
+              ) : (
+                <GreenCard className="text-center py-12">
+                  <div className="text-4xl mb-4">🧠</div>
+                  <h3 className="font-bold text-lg mb-2">No Assessment Yet</h3>
+                  <p className="text-white/50 text-sm mb-4">
+                    Take your first HDA-DCFM assessment to generate your base
+                    twin profile.
+                  </p>
                 </GreenCard>
-              </div>
-            ) : (
-              <GreenCard className="text-center py-12">
-                <div className="text-4xl mb-4">🧠</div>
-                <h3 className="font-bold text-lg mb-2">No Assessment Yet</h3>
-                <p className="text-white/50 text-sm mb-4">
-                  Take your first HDA-DCFM assessment to generate your base twin
-                  profile.
-                </p>
-              </GreenCard>
-            )}
+              ))}
 
-            {assessments.length > 1 && (
+            {!showAssessment && assessments.length > 1 && (
               <GreenCard className="mt-6">
                 <h3 className="font-bold mb-4">Assessment History</h3>
                 <div className="space-y-3">
@@ -837,53 +958,68 @@ export function UserDashboardPage({ onNavigate }: Props) {
             </div>
             <div>
               <h3 className="text-lg font-bold mb-4">Simulation Preview</h3>
-              <GreenCard>
-                <div
-                  className="mb-3 text-xs font-semibold"
-                  style={{ color: "#C8A24A", letterSpacing: "0.08em" }}
-                >
-                  DCFM DECISION FORCE
-                </div>
-                {(() => {
-                  const f = computeDecisionForce(
-                    bSliders as Record<Dimension, number>,
-                  );
-                  return (
-                    <>
-                      <div className="text-4xl font-bold text-white mb-1">
-                        {f.toFixed(2)}
-                      </div>
-                      <div className="text-white/60 text-sm mb-4">
-                        {interpretForce(f)}
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div
-                          className="rounded-xl p-3"
-                          style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
-                        >
-                          <div className="text-xs text-white/40 mb-1">
-                            Time to Decision
+              {latestScores ? (
+                <GreenCard>
+                  <div
+                    className="mb-3 text-xs font-semibold"
+                    style={{ color: "#C8A24A", letterSpacing: "0.08em" }}
+                  >
+                    DCFM DECISION FORCE
+                  </div>
+                  {(() => {
+                    const f = computeDecisionForce(
+                      bSliders as Record<Dimension, number>,
+                    );
+                    return (
+                      <>
+                        <div className="text-4xl font-bold text-white mb-1">
+                          {f.toFixed(2)}
+                        </div>
+                        <div className="text-white/60 text-sm mb-4">
+                          {interpretForce(f)}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div
+                            className="rounded-xl p-3"
+                            style={{
+                              backgroundColor: "rgba(255,255,255,0.05)",
+                            }}
+                          >
+                            <div className="text-xs text-white/40 mb-1">
+                              Time to Decision
+                            </div>
+                            <div className="text-sm font-semibold">
+                              {timeToDecision(bSliders.em)}
+                            </div>
                           </div>
-                          <div className="text-sm font-semibold">
-                            {timeToDecision(bSliders.em)}
+                          <div
+                            className="rounded-xl p-3"
+                            style={{
+                              backgroundColor: "rgba(255,255,255,0.05)",
+                            }}
+                          >
+                            <div className="text-xs text-white/40 mb-1">
+                              Stability
+                            </div>
+                            <div className="text-sm font-semibold">
+                              {stabilityRating(bSliders.iai)}
+                            </div>
                           </div>
                         </div>
-                        <div
-                          className="rounded-xl p-3"
-                          style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
-                        >
-                          <div className="text-xs text-white/40 mb-1">
-                            Stability
-                          </div>
-                          <div className="text-sm font-semibold">
-                            {stabilityRating(bSliders.iai)}
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  );
-                })()}
-              </GreenCard>
+                      </>
+                    );
+                  })()}
+                </GreenCard>
+              ) : (
+                <GreenCard>
+                  <div
+                    className="text-center py-6"
+                    style={{ color: "#C8A24A" }}
+                  >
+                    Take an assessment first to see your Simulation Preview.
+                  </div>
+                </GreenCard>
+              )}
             </div>
           </div>
         )}
@@ -1143,44 +1279,292 @@ export function UserDashboardPage({ onNavigate }: Props) {
             </button>
 
             {simResult && (
-              <div className="space-y-4">
-                <h3 className="font-bold">Simulation Results</h3>
-                {simResult.map((r) => (
-                  <GreenCard key={r.name}>
-                    <div className="flex items-start justify-between mb-3">
-                      <h4 className="font-bold">{r.name}</h4>
-                      <span
-                        className="text-2xl font-bold"
-                        style={{ color: "#C8A24A" }}
-                      >
-                        {r.force.toFixed(2)}
-                      </span>
-                    </div>
-                    <p className="text-white font-semibold mb-3">
-                      → {r.interpretation}
-                    </p>
-                    <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-6">
+                <h3 className="text-lg font-bold">Simulation Results</h3>
+
+                {/* Scenario Summary Banner */}
+                <div
+                  className="rounded-2xl px-6 py-4"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgba(200,162,74,0.15) 0%, rgba(200,162,74,0.05) 100%)",
+                    border: "1px solid rgba(200,162,74,0.35)",
+                  }}
+                >
+                  <div className="text-xs text-white/40 uppercase tracking-widest mb-1">
+                    Scenario Analysed
+                  </div>
+                  <p className="text-white/90 text-sm italic leading-relaxed">
+                    &ldquo;{simScenario}&rdquo;
+                  </p>
+                </div>
+
+                {/* Per-version result cards */}
+                {simResult.map((r, idx) => {
+                  const forceColor =
+                    r.force >= 8
+                      ? "#4ade80"
+                      : r.force >= 5
+                        ? "#C8A24A"
+                        : "#f87171";
+                  const fillPct = Math.min(
+                    100,
+                    Math.max(0, (r.force / 15) * 100),
+                  );
+                  return (
+                    <div
+                      key={r.name}
+                      className="rounded-2xl overflow-hidden"
+                      style={{ border: "1px solid rgba(255,255,255,0.12)" }}
+                    >
+                      {/* Header */}
                       <div
-                        className="rounded-lg p-3"
-                        style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
+                        className="px-6 py-4 flex items-center justify-between"
+                        style={{ backgroundColor: "rgba(255,255,255,0.06)" }}
                       >
-                        <div className="text-xs text-white/40 mb-1">
-                          Time to Decision
+                        <div>
+                          <div className="text-xs text-white/40 uppercase tracking-widest mb-0.5">
+                            Version {idx + 1}
+                          </div>
+                          <h4 className="text-lg font-bold">{r.name}</h4>
                         </div>
-                        <div className="text-sm font-medium">{r.time}</div>
+                        <div className="text-right">
+                          <div className="text-xs text-white/40 mb-0.5">
+                            Decision Force
+                          </div>
+                          <span
+                            className="text-3xl font-black"
+                            style={{ color: forceColor }}
+                          >
+                            {r.force.toFixed(1)}
+                          </span>
+                        </div>
                       </div>
+
                       <div
-                        className="rounded-lg p-3"
-                        style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
+                        className="px-6 py-5 space-y-5"
+                        style={{ backgroundColor: "rgba(255,255,255,0.02)" }}
                       >
-                        <div className="text-xs text-white/40 mb-1">
-                          Stability
+                        {/* Interpretation headline */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">
+                            {r.force >= 8 ? "⚡" : r.force >= 5 ? "🎯" : "⏸️"}
+                          </span>
+                          <span
+                            className="text-base font-bold"
+                            style={{ color: forceColor }}
+                          >
+                            {r.interpretation}
+                          </span>
                         </div>
-                        <div className="text-sm font-medium">{r.stability}</div>
+
+                        {/* Decision Force Meter */}
+                        <div>
+                          <div className="flex justify-between text-xs text-white/40 mb-1">
+                            <span>Decision Force Meter</span>
+                            <span>{r.force.toFixed(1)} / 15</span>
+                          </div>
+                          <div className="h-3 rounded-full bg-white/10 overflow-hidden">
+                            <div
+                              className="h-3 rounded-full transition-all"
+                              style={{
+                                width: `${fillPct}%`,
+                                background: `linear-gradient(90deg, ${forceColor}99, ${forceColor})`,
+                              }}
+                            />
+                          </div>
+                          <div className="flex justify-between text-xs text-white/25 mt-0.5">
+                            <span>Low</span>
+                            <span>High</span>
+                          </div>
+                        </div>
+
+                        {/* 4 Key Metrics Grid */}
+                        <div className="grid grid-cols-2 gap-3">
+                          {[
+                            {
+                              icon: "🧩",
+                              label: "Decision Outcome",
+                              value: r.interpretation,
+                            },
+                            {
+                              icon: "⏱️",
+                              label: "Time to Decision",
+                              value: r.time,
+                            },
+                            {
+                              icon: "🔒",
+                              label: "Identity Stability",
+                              value: r.stability,
+                            },
+                            {
+                              icon: "💎",
+                              label: "Confidence Level",
+                              value: r.confidence,
+                            },
+                          ].map((m) => (
+                            <div
+                              key={m.label}
+                              className="rounded-xl p-3"
+                              style={{
+                                backgroundColor: "rgba(255,255,255,0.05)",
+                                border: "1px solid rgba(255,255,255,0.07)",
+                              }}
+                            >
+                              <div className="text-lg mb-1">{m.icon}</div>
+                              <div className="text-xs text-white/40 mb-0.5">
+                                {m.label}
+                              </div>
+                              <div className="text-sm font-semibold text-white/90">
+                                {m.value}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Cognitive Signals */}
+                        <div>
+                          <div
+                            className="text-xs font-bold uppercase tracking-widest mb-2"
+                            style={{ color: "#C8A24A" }}
+                          >
+                            Cognitive Signals
+                          </div>
+                          <ul className="space-y-1.5">
+                            {r.cognitiveSignals.map((sig) => (
+                              <li
+                                key={sig.slice(0, 30)}
+                                className="flex items-start gap-2 text-sm text-white/70"
+                              >
+                                <span
+                                  className="mt-0.5 text-xs"
+                                  style={{ color: "#C8A24A" }}
+                                >
+                                  ▸
+                                </span>
+                                <span>{sig}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Scenario Insight */}
+                        <div
+                          className="rounded-xl p-4"
+                          style={{
+                            backgroundColor: "rgba(27,67,50,0.6)",
+                            border: "1px solid rgba(200,162,74,0.2)",
+                          }}
+                        >
+                          <div
+                            className="text-xs font-bold uppercase tracking-widest mb-2"
+                            style={{ color: "#C8A24A" }}
+                          >
+                            Scenario Insight
+                          </div>
+                          <p className="text-sm text-white/80 leading-relaxed">
+                            {r.scenarioInsight}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </GreenCard>
-                ))}
+                  );
+                })}
+
+                {/* Comparison Summary (2+ versions) */}
+                {simResult.length >= 2 &&
+                  (() => {
+                    const sorted = [...simResult].sort(
+                      (a, b) => b.force - a.force,
+                    );
+                    const best = sorted[0];
+                    const worst = sorted[sorted.length - 1];
+                    const delta = best.force - worst.force;
+                    return (
+                      <div
+                        className="rounded-2xl p-6"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, rgba(200,162,74,0.1) 0%, rgba(27,67,50,0.4) 100%)",
+                          border: "1px solid rgba(200,162,74,0.3)",
+                        }}
+                      >
+                        <div className="flex items-center gap-2 mb-4">
+                          <span className="text-xl">👑</span>
+                          <h4 className="font-bold text-base">
+                            Which version handles this best?
+                          </h4>
+                        </div>
+
+                        {/* Bar comparison */}
+                        <div className="space-y-3 mb-5">
+                          {sorted.map((r) => {
+                            const pct = Math.min(
+                              100,
+                              Math.max(0, (r.force / 15) * 100),
+                            );
+                            const isTop = r.name === best.name;
+                            return (
+                              <div key={r.name}>
+                                <div className="flex justify-between text-sm mb-1">
+                                  <span
+                                    className={
+                                      isTop ? "font-bold" : "text-white/70"
+                                    }
+                                  >
+                                    {isTop ? "👑 " : ""}
+                                    {r.name}
+                                  </span>
+                                  <span
+                                    className="text-xs font-bold"
+                                    style={{
+                                      color: isTop
+                                        ? "#C8A24A"
+                                        : "rgba(255,255,255,0.4)",
+                                    }}
+                                  >
+                                    {r.force.toFixed(1)}
+                                  </span>
+                                </div>
+                                <div className="h-2.5 rounded-full bg-white/10 overflow-hidden">
+                                  <div
+                                    className="h-2.5 rounded-full"
+                                    style={{
+                                      width: `${pct}%`,
+                                      background: isTop
+                                        ? "linear-gradient(90deg, #C8A24A88, #C8A24A)"
+                                        : "rgba(255,255,255,0.2)",
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Coaching recommendation */}
+                        <div className="text-sm text-white/80 leading-relaxed">
+                          <span
+                            className="font-bold"
+                            style={{ color: "#C8A24A" }}
+                          >
+                            {best.name}
+                          </span>{" "}
+                          leads with a Decision Force of{" "}
+                          <span className="font-bold">
+                            {best.force.toFixed(1)}
+                          </span>
+                          {delta > 2
+                            ? `, significantly ahead by ${delta.toFixed(1)} points`
+                            : ""}
+                          .{" "}
+                          {delta > 3
+                            ? `The gap between ${best.name} and ${worst.name} is substantial — consider what beliefs or habits are holding your ${worst.name} back from this level of decisiveness.`
+                            : `The versions are close — small cognitive shifts could bring ${worst.name} to match ${best.name}'s decision clarity.`}
+                        </div>
+                      </div>
+                    );
+                  })()}
               </div>
             )}
           </div>
