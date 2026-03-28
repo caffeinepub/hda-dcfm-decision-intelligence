@@ -1,24 +1,30 @@
-import { useEffect, useRef, useState } from "react";
+import { HttpAgent } from "@icp-sdk/core/agent";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DynamicRadarChart } from "../components/DynamicRadarChart";
+import {
+  MultimodalInputWidget,
+  type MultimodalResponse,
+} from "../components/MultimodalInputWidget";
+import { loadConfig } from "../config";
 import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   DIMENSIONS,
   DIMENSION_LABELS,
   DIMENSION_SHORT,
-  QUESTIONS,
   classifyArchetype,
   classifyDecisionForce,
   computeScores,
 } from "../scoring";
 import type { Dimension } from "../scoring";
+import { StorageClient } from "../utils/StorageClient";
 
 interface Props {
   onNavigate: (page: string) => void;
 }
 
-type TabId = "twin" | "builder" | "versions" | "simlab" | "growth";
+type TabId = "twin" | "builder" | "versions" | "simlab" | "growth" | "journal";
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: "twin", label: "My Mind Twin", icon: "🧠" },
@@ -26,9 +32,414 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: "versions", label: "My Versions", icon: "📂" },
   { id: "simlab", label: "Simulation Lab", icon: "⚗️" },
   { id: "growth", label: "Growth Path", icon: "📈" },
+  { id: "journal", label: "My Day Journal", icon: "📓" },
 ];
 
-const LIKERT = [1, 2, 3, 4, 5, 6, 7];
+// ─── Personal Question Bank (60 questions, 10 per dimension) ─────────────────
+const PERSONAL_QUESTIONS: {
+  id: string;
+  dimension: Dimension;
+  text: string;
+  skipLabel: string;
+}[] = [
+  // PM – Perception & Mapping
+  {
+    id: "pm1",
+    dimension: "pm",
+    text: "When you walk into a room full of people you don\u2019t know, what\u2019s the first thing you naturally notice \u2014 faces, energy, exits, or what\u2019s out of place?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "pm2",
+    dimension: "pm",
+    text: "Describe a time you walked into a meeting or situation and immediately knew something was off. What told you?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "pm3",
+    dimension: "pm",
+    text: "When you\u2019re trying to make sense of a complex problem, what do you do first \u2014 talk to people, research, sit with it, or draw it out?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "pm4",
+    dimension: "pm",
+    text: "How quickly can you usually tell if someone is being honest with you?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "pm5",
+    dimension: "pm",
+    text: "When you\u2019re in a new city or place, how do you navigate \u2014 plan ahead, go by feel, or follow others?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "pm6",
+    dimension: "pm",
+    text: "A colleague gives you confusing instructions. What\u2019s your instinct \u2014 ask again, figure it out, or just start?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "pm7",
+    dimension: "pm",
+    text: "You receive unexpected news \u2014 good or bad. What part of your brain wakes up first?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "pm8",
+    dimension: "pm",
+    text: "In a negotiation or important conversation, how aware are you of what\u2019s NOT being said?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "pm9",
+    dimension: "pm",
+    text: "When making a big decision, do you tend to rely more on data, gut feeling, or other people\u2019s experience?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "pm10",
+    dimension: "pm",
+    text: "How do you usually know when you\u2019ve truly understood something versus just heard it?",
+    skipLabel: "Skip",
+  },
+
+  // EM – Emotional Mapping
+  {
+    id: "em1",
+    dimension: "em",
+    text: "Think about the last time someone criticised something you worked hard on. What happened inside you in the first 10 seconds?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "em2",
+    dimension: "em",
+    text: "Describe a decision you made purely on emotion that turned out to be exactly right.",
+    skipLabel: "Skip",
+  },
+  {
+    id: "em3",
+    dimension: "em",
+    text: "When you\u2019re anxious about something, how does it show \u2014 sleep, appetite, irritability, silence?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "em4",
+    dimension: "em",
+    text: "How long does it typically take you to calm down after a heated argument or disappointment?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "em5",
+    dimension: "em",
+    text: "Have you ever stayed in a situation (job, relationship, project) longer than you should because of how it made you feel?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "em6",
+    dimension: "em",
+    text: "When you feel overwhelmed, what\u2019s your go-to coping mechanism?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "em7",
+    dimension: "em",
+    text: "If someone you respect suddenly goes cold or distant, what do you do with that?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "em8",
+    dimension: "em",
+    text: "Describe a time your emotions gave you clarity, not confusion, during a tough decision.",
+    skipLabel: "Skip",
+  },
+  {
+    id: "em9",
+    dimension: "em",
+    text: "How do you handle waiting \u2014 especially when the outcome matters a lot?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "em10",
+    dimension: "em",
+    text: "When something goes really well for you, how long does the good feeling last before you\u2019re already on to the next concern?",
+    skipLabel: "Skip",
+  },
+
+  // RRM – Risk-Reward Mapping
+  {
+    id: "rrm1",
+    dimension: "rrm",
+    text: "You have a stable job and a startup opportunity. Walk me through what goes through your mind.",
+    skipLabel: "Not applicable",
+  },
+  {
+    id: "rrm2",
+    dimension: "rrm",
+    text: "Describe the riskiest thing you\u2019ve done in the last 2 years \u2014 professionally or personally.",
+    skipLabel: "Skip",
+  },
+  {
+    id: "rrm3",
+    dimension: "rrm",
+    text: "Before making a big investment (money, time, career), how much information do you need before you feel ready?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "rrm4",
+    dimension: "rrm",
+    text: "What\u2019s your relationship with regret \u2014 do you regret things you did, or things you didn\u2019t do?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "rrm5",
+    dimension: "rrm",
+    text: "When a deal or opportunity seems almost too good, what\u2019s your instinct?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "rrm6",
+    dimension: "rrm",
+    text: "How do you decide when to cut your losses on something not working?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "rrm7",
+    dimension: "rrm",
+    text: "What\u2019s a gamble you took that paid off? What made you go for it?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "rrm8",
+    dimension: "rrm",
+    text: "How do you feel about debt \u2014 strategic tool or something to avoid?",
+    skipLabel: "Not applicable",
+  },
+  {
+    id: "rrm9",
+    dimension: "rrm",
+    text: "When faced with a risky decision, do you focus more on what you could gain or what you could lose?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "rrm10",
+    dimension: "rrm",
+    text: "Describe a time fear stopped you from doing something you now wish you had done.",
+    skipLabel: "Skip",
+  },
+
+  // IAI – Internal-Autonomy Index
+  {
+    id: "iai1",
+    dimension: "iai",
+    text: "When your close circle strongly disagrees with your decision, what do you typically do?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "iai2",
+    dimension: "iai",
+    text: "Describe a time you did something purely for yourself despite heavy pressure not to.",
+    skipLabel: "Skip",
+  },
+  {
+    id: "iai3",
+    dimension: "iai",
+    text: "How much does someone\u2019s disappointment in you change what you do next?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "iai4",
+    dimension: "iai",
+    text: "When you\u2019re deciding something important, whose voice shows up in your head first \u2014 yours, or someone else\u2019s?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "iai5",
+    dimension: "iai",
+    text: "Have you ever changed a decision not because of logic but because of how the other person would react?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "iai6",
+    dimension: "iai",
+    text: "If no one would ever find out what you chose, would any of your recent decisions have been different?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "iai7",
+    dimension: "iai",
+    text: "Describe your relationship with validation \u2014 how much do you need it to feel confident?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "iai8",
+    dimension: "iai",
+    text: "When you go against someone\u2019s advice and it works out, how do you feel?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "iai9",
+    dimension: "iai",
+    text: "How often do you find yourself doing things out of obligation rather than choice?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "iai10",
+    dimension: "iai",
+    text: "What would you do differently in your life if you stopped caring what people thought?",
+    skipLabel: "Skip",
+  },
+
+  // SIS – Social Intelligence & Stability
+  {
+    id: "sis1",
+    dimension: "sis",
+    text: "When a group is clearly heading in the wrong direction, what do you do \u2014 speak up, wait, or follow along?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "sis2",
+    dimension: "sis",
+    text: "How do you handle someone who constantly drains your energy \u2014 at work or at home?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "sis3",
+    dimension: "sis",
+    text: "Describe your last meaningful conflict. How did you handle it, and what did you wish you\u2019d done differently?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "sis4",
+    dimension: "sis",
+    text: "When someone is clearly performing rather than being genuine, how quickly do you notice \u2014 and what do you do?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "sis5",
+    dimension: "sis",
+    text: "How comfortable are you saying no to people you care about?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "sis6",
+    dimension: "sis",
+    text: "In a group, do people tend to look to you for direction, or do you prefer to follow and support?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "sis7",
+    dimension: "sis",
+    text: "Describe a relationship where you gave more than you received. How long did it take you to see it?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "sis8",
+    dimension: "sis",
+    text: "When you need help, do you ask for it easily, or do you try to figure it out alone?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "sis9",
+    dimension: "sis",
+    text: "How do you usually feel after spending a long day with a lot of people?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "sis10",
+    dimension: "sis",
+    text: "Describe a time you read someone completely wrong. What was the impact?",
+    skipLabel: "Skip",
+  },
+
+  // EDI – Execution-Decision Integration
+  {
+    id: "edi1",
+    dimension: "edi",
+    text: "You have three urgent things to do today with time for only two. How do you decide?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "edi2",
+    dimension: "edi",
+    text: "Describe your process from making a decision to actually acting on it. What happens in between?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "edi3",
+    dimension: "edi",
+    text: "What\u2019s the last thing you decided to do but still haven\u2019t done \u2014 and why?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "edi4",
+    dimension: "edi",
+    text: "How do you handle the gap between knowing what to do and actually doing it?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "edi5",
+    dimension: "edi",
+    text: "When you\u2019re stuck on a task, what does \u2018stuck\u2019 actually look like for you \u2014 avoidance, overthinking, distraction?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "edi6",
+    dimension: "edi",
+    text: "Have you ever made a fast decision that turned out to be your best one? What was it?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "edi7",
+    dimension: "edi",
+    text: "Describe your relationship with deadlines \u2014 do they motivate you, stress you, or do you ignore them?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "edi8",
+    dimension: "edi",
+    text: "When a plan falls apart, how quickly can you switch to a new direction?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "edi9",
+    dimension: "edi",
+    text: "What does a productive day feel like for you \u2014 structured from morning, reactive to what comes, or something else?",
+    skipLabel: "Skip",
+  },
+  {
+    id: "edi10",
+    dimension: "edi",
+    text: "How do you feel when someone else makes a decision you were supposed to make?",
+    skipLabel: "Skip",
+  },
+];
+
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const a = [...arr];
+  let s = seed;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (s * 9301 + 49297) % 233280;
+    const j = Math.floor((s / 233280) * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildSessionQuestions(seed: number) {
+  return DIMENSIONS.flatMap((dim) => {
+    const pool = PERSONAL_QUESTIONS.filter((q) => q.dimension === dim);
+    return seededShuffle(pool, seed + dim.charCodeAt(0)).slice(0, 6);
+  });
+}
+
+const EMPTY_RESPONSE: MultimodalResponse = {
+  scaleValue: 0,
+  textResponse: "",
+  audioBlob: null,
+  videoBlob: null,
+  transcript: "",
+};
 
 function computeDecisionForce(scores: Record<Dimension, number>): number {
   return scores.em + scores.rrm + scores.iai - (scores.sis + (10 - scores.edi));
@@ -94,6 +505,18 @@ type DecisionLogEntry = {
   timestamp: bigint;
 };
 
+type JournalEntry = {
+  id: string;
+  userId: string;
+  title: string;
+  entryType: string;
+  blobUrl: string;
+  transcript: string;
+  aiAnalysis: string;
+  dimensionSignals: string;
+  timestamp: bigint;
+};
+
 function GreenCard({
   children,
   className = "",
@@ -109,6 +532,23 @@ function GreenCard({
       {children}
     </div>
   );
+}
+
+const DIMENSION_DESCRIPTIONS: Record<string, string> = {
+  pm: "This set explores how you naturally structure and map your world. High scorers are sharp situational readers; lower scorers tend to be more intuitive or spontaneous.",
+  em: "These questions reveal how your emotions influence your choices. High scorers stay composed and use emotions as data; lower scorers may be more reactive.",
+  rrm: "This dimension measures your appetite for risk and how you evaluate trade-offs. High scorers embrace calculated risk; lower scorers prefer certainty.",
+  iai: "These questions probe your autonomy of thought \u2014 how independently you decide versus how much external voices shape you.",
+  sis: "This set examines how social dynamics and interpersonal relationships shape your decisions. High scorers navigate complexity well; lower scorers may find it challenging.",
+  edi: "These questions assess how quickly and decisively you act once a decision is made. High scorers are decisive executors; lower scorers may overthink before acting.",
+};
+
+const MAX_JOURNAL_SECONDS = 180;
+
+function formatTimer(s: number): string {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
 }
 
 export function UserDashboardPage({ onNavigate }: Props) {
@@ -127,7 +567,16 @@ export function UserDashboardPage({ onNavigate }: Props) {
   const [assessments, setAssessments] = useState<StoredAssessment[]>([]);
   const [showAssessment, setShowAssessment] = useState(false);
   const [asmStep, setAsmStep] = useState(0);
-  const [asmResponses, setAsmResponses] = useState<number[]>(Array(36).fill(0));
+  const [asmSeed] = useState(() => Date.now());
+  const sessionQuestions = useMemo(
+    () => buildSessionQuestions(asmSeed),
+    [asmSeed],
+  );
+  const [asmResponses, setAsmResponses] = useState<MultimodalResponse[]>(
+    Array(36)
+      .fill(null)
+      .map(() => ({ ...EMPTY_RESPONSE })),
+  );
   const [asmSubmitting, setAsmSubmitting] = useState(false);
 
   // Twin Builder
@@ -184,6 +633,32 @@ export function UserDashboardPage({ onNavigate }: Props) {
   const [decisionLogs, setDecisionLogs] = useState<DecisionLogEntry[]>([]);
   const [logSaving, setLogSaving] = useState(false);
 
+  // Journal
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  const [journalMode, setJournalMode] = useState<"text" | "audio" | "video">(
+    "text",
+  );
+  const [journalText, setJournalText] = useState("");
+  const [journalRecording, setJournalRecording] = useState(false);
+  const [journalTimeLeft, setJournalTimeLeft] = useState(MAX_JOURNAL_SECONDS);
+  const [journalBlob, setJournalBlob] = useState<Blob | null>(null);
+  const [journalBlobUrl, setJournalBlobUrl] = useState<string | null>(null);
+  const [journalTranscript, setJournalTranscript] = useState("");
+  const [journalSaving, setJournalSaving] = useState(false);
+  const [journalAnalyzingId, setJournalAnalyzingId] = useState<string | null>(
+    null,
+  );
+  const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
+  const [editingTitleVal, setEditingTitleVal] = useState("");
+  const [journalVideoEnabled, setJournalVideoEnabled] = useState(false);
+
+  const journalMrRef = useRef<MediaRecorder | null>(null);
+  const journalChunksRef = useRef<Blob[]>([]);
+  const journalTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const journalStreamRef = useRef<MediaStream | null>(null);
+  const journalVideoRef = useRef<HTMLVideoElement | null>(null);
+  const journalRecogRef = useRef<any>(null);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
   useEffect(() => {
     if (!isAuthenticated) {
@@ -213,6 +688,21 @@ export function UserDashboardPage({ onNavigate }: Props) {
     loadVersions();
     loadDecisionLogs();
   }, [isAuthenticated, actor]);
+
+  useEffect(() => {
+    if (activeTab === "journal" && actor) {
+      loadJournalEntries();
+    }
+  }, [activeTab, actor]);
+
+  useEffect(() => {
+    return () => {
+      if (journalTimerRef.current) clearInterval(journalTimerRef.current);
+      if (journalStreamRef.current)
+        for (const t of journalStreamRef.current.getTracks()) t.stop();
+      if (journalRecogRef.current) journalRecogRef.current.stop();
+    };
+  }, []);
 
   const loadAssessments = async () => {
     if (!actor) return;
@@ -249,17 +739,34 @@ export function UserDashboardPage({ onNavigate }: Props) {
     setDecisionLogs(list);
   };
 
-  // Inline assessment
+  const loadJournalEntries = async () => {
+    if (!actor) return;
+    const list = (await (actor as any)
+      .getUserJournalEntries()
+      .catch(() => [])) as JournalEntry[];
+    setJournalEntries(list);
+  };
+
+  // ─── Assessment helpers ───────────────────────────────────────────────────
   const currentDim = DIMENSIONS[asmStep];
-  const stepQs = QUESTIONS.filter((q) => q.dimension === currentDim);
   const stepStart = asmStep * 6;
-  const stepResponses = stepQs.map((_, i) => asmResponses[stepStart + i]);
-  const allAnswered = stepResponses.every((r) => r > 0);
+  const stepQs = sessionQuestions.slice(stepStart, stepStart + 6);
+  const stepResponses = asmResponses.slice(stepStart, stepStart + 6);
+  const allAnswered = stepResponses.every(
+    (r) =>
+      r.scaleValue > 0 ||
+      r.textResponse.trim().length > 0 ||
+      r.audioBlob !== null ||
+      r.videoBlob !== null,
+  );
 
   const handleAsmSubmit = async () => {
     if (!actor) return;
     setAsmSubmitting(true);
-    const rawScores = computeScores(asmResponses);
+    const scaleValues = asmResponses.map((r) =>
+      r.scaleValue > 0 ? r.scaleValue : 4,
+    );
+    const rawScores = computeScores(scaleValues);
     const scores = {
       pm: rawScores.pm,
       em: rawScores.em,
@@ -270,18 +777,30 @@ export function UserDashboardPage({ onNavigate }: Props) {
     };
     const archetype = classifyArchetype(scores);
     const forceLevel = classifyDecisionForce(scores);
-    const bigintR = asmResponses.map((r) => BigInt(r));
+    const bigintR = scaleValues.map((r) => BigInt(r));
+    const textResponses = asmResponses.map(
+      (r) => [r.textResponse, r.transcript].filter(Boolean).join(" | ") || "",
+    );
     try {
-      await actor.submitRegisteredAssessment(
-        bigintR,
-        scores,
-        archetype,
-        forceLevel,
-      );
+      if ((actor as any).submitAssessmentWithText) {
+        await (actor as any).submitAssessmentWithText(
+          bigintR,
+          textResponses,
+          scores,
+          archetype,
+          forceLevel,
+        );
+      } else {
+        await actor.submitAssessment(bigintR, scores, archetype, forceLevel);
+      }
       await loadAssessments();
       toast.success("Assessment saved!");
       setShowAssessment(false);
-      setAsmResponses(Array(36).fill(0));
+      setAsmResponses(
+        Array(36)
+          .fill(null)
+          .map(() => ({ ...EMPTY_RESPONSE })),
+      );
       setAsmStep(0);
     } catch (_) {
       toast.error("Failed to save assessment. Please try again.");
@@ -347,7 +866,6 @@ export function UserDashboardPage({ onNavigate }: Props) {
       signals.push(
         `Balanced Emotional Processing (EM ${v.em.toFixed(1)}) provides measured emotional input to decisions`,
       );
-
     if (v.iai >= 6)
       signals.push(
         `Strong Information Analysis (IAI ${v.iai.toFixed(1)}) drives thorough evaluation before committing`,
@@ -360,25 +878,22 @@ export function UserDashboardPage({ onNavigate }: Props) {
       signals.push(
         `Moderate Information Analysis (IAI ${v.iai.toFixed(1)}) balances research with action`,
       );
-
     if (v.sis >= 6)
       signals.push(
-        `High Social Influence Sensitivity (SIS ${v.sis.toFixed(1)}) means external opinions and social pressure shape outcomes`,
+        `High Social Influence Sensitivity (SIS ${v.sis.toFixed(1)}) means external opinions shape outcomes`,
       );
     else if (v.sis <= 3)
       signals.push(
-        `Low Social Influence Sensitivity (SIS ${v.sis.toFixed(1)}) enables independent judgment free from social pressure`,
+        `Low Social Influence Sensitivity (SIS ${v.sis.toFixed(1)}) enables independent judgment`,
       );
-
     if (v.edi >= 6)
       signals.push(
         `Strong Execution Drive (EDI ${v.edi.toFixed(1)}) converts decisions into action swiftly`,
       );
     else if (v.edi <= 3)
       signals.push(
-        `Weak Execution Drive (EDI ${v.edi.toFixed(1)}) may delay follow-through even after deciding`,
+        `Weak Execution Drive (EDI ${v.edi.toFixed(1)}) may delay follow-through`,
       );
-
     return signals.slice(0, 4);
   };
 
@@ -395,9 +910,9 @@ export function UserDashboardPage({ onNavigate }: Props) {
           : "low decision force";
     const insightMap: Record<string, string> = {
       Career: `For a career decision, this version's ${v.iai >= 5 ? "strong analytical ability" : "intuitive style"} will ${v.edi >= 5 ? "drive decisive action" : "require more time to commit"}. The ${v.sis <= 4 ? "low social sensitivity ensures an independent choice" : "high social sensitivity may lead to seeking validation"} before moving forward.`,
-      Financial: `Financial scenarios demand clarity — this version's ${v.pm >= 5 ? "strong pattern mapping" : "pattern recognition gaps"} will ${force >= 6 ? "support confident risk assessment" : "create hesitation around uncertainty"}. ${v.rrm >= 5 ? "Rational reasoning is a key asset here" : "Emotional weight may cloud pure financial logic"}.`,
+      Financial: `Financial scenarios demand clarity \u2014 this version's ${v.pm >= 5 ? "strong pattern mapping" : "pattern recognition gaps"} will ${force >= 6 ? "support confident risk assessment" : "create hesitation around uncertainty"}. ${v.rrm >= 5 ? "Rational reasoning is a key asset here" : "Emotional weight may cloud pure financial logic"}.`,
       Relationship: `In relational decisions, this version's EM of ${v.em.toFixed(1)} means ${v.em >= 5 ? "feelings take center stage, adding depth but slowing logic" : "rational thinking leads, which can miss emotional nuance"}. ${v.sis >= 5 ? "Social harmony is prioritized, making compromise more likely" : "Independence may override interpersonal compromise"}.`,
-      Creative: `Creative decisions thrive on cognitive flexibility — this version's ${v.iai >= 5 ? "deep analytical capacity helps evaluate creative ideas rigorously" : "intuitive approach fuels spontaneous creative leaps"}. The ${strength} here means ${force >= 6 ? "creative ideas will be acted upon with conviction" : "creative blocks may arise from over-deliberation"}.`,
+      Creative: `Creative decisions thrive on cognitive flexibility \u2014 this version's ${v.iai >= 5 ? "deep analytical capacity helps evaluate creative ideas rigorously" : "intuitive approach fuels spontaneous creative leaps"}. The ${strength} here means ${force >= 6 ? "creative ideas will be acted upon with conviction" : "creative blocks may arise from over-deliberation"}.`,
       "Risk-based": `Risk scenarios test the balance between courage and caution. This version's ${v.rrm >= 5 ? "strong rational reasoning provides calculated risk assessment" : "limited risk rationalization may lead to avoiding challenges"}. With ${v.edi >= 5 ? "strong execution drive, once committed the action follows through" : "moderate execution drive, partial commitments are possible"}.`,
       Personal: `For personal decisions, this version processes through a ${v.em >= 5 ? "primarily emotional lens, giving importance to feelings and values" : "primarily analytical lens, prioritizing logic over sentiment"}. ${v.iai >= 5 ? "Deep introspection guides the choice with clarity" : "Faster intuitive decisions may bypass deeper reflection"}.`,
     };
@@ -459,9 +974,183 @@ export function UserDashboardPage({ onNavigate }: Props) {
     }
   };
 
+  // ─── Journal helpers ──────────────────────────────────────────────────────
+  const stopJournalRecording = () => {
+    if (journalMrRef.current && journalMrRef.current.state !== "inactive") {
+      journalMrRef.current.stop();
+    }
+    if (journalTimerRef.current) clearInterval(journalTimerRef.current);
+    if (journalStreamRef.current)
+      for (const t of journalStreamRef.current.getTracks()) t.stop();
+    if (journalRecogRef.current) journalRecogRef.current.stop();
+    setJournalRecording(false);
+    setJournalTimeLeft(MAX_JOURNAL_SECONDS);
+  };
+
+  const startJournalRecording = async (isVideo: boolean) => {
+    try {
+      const constraints = isVideo
+        ? { audio: true, video: { width: 640, height: 480 } }
+        : { audio: true };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      journalStreamRef.current = stream;
+      if (isVideo && journalVideoRef.current) {
+        journalVideoRef.current.srcObject = stream;
+        journalVideoRef.current.muted = true;
+        journalVideoRef.current.play();
+      }
+      journalChunksRef.current = [];
+      const mr = new MediaRecorder(stream);
+      journalMrRef.current = mr;
+      mr.ondataavailable = (e) => {
+        if (e.data.size > 0) journalChunksRef.current.push(e.data);
+      };
+      mr.onstop = () => {
+        const mime = isVideo ? "video/webm" : "audio/webm";
+        const blob = new Blob(journalChunksRef.current, { type: mime });
+        const url = URL.createObjectURL(blob);
+        setJournalBlob(blob);
+        setJournalBlobUrl(url);
+        if (isVideo && journalVideoRef.current)
+          journalVideoRef.current.srcObject = null;
+      };
+      mr.start();
+      setJournalRecording(true);
+      setJournalTimeLeft(MAX_JOURNAL_SECONDS);
+      journalTimerRef.current = setInterval(() => {
+        setJournalTimeLeft((prev) => {
+          if (prev <= 1) {
+            stopJournalRecording();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      const SpeechRecognition =
+        (window as any).SpeechRecognition ||
+        (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const rec = new SpeechRecognition();
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.onresult = (event: any) => {
+          let t = "";
+          for (let i = 0; i < event.results.length; i++)
+            t += event.results[i][0].transcript;
+          setJournalTranscript(t);
+        };
+        rec.start();
+        journalRecogRef.current = rec;
+      }
+    } catch (_) {
+      alert("Could not access microphone. Please check permissions.");
+    }
+  };
+
+  const handleSaveJournalEntry = async () => {
+    if (!actor) return;
+    const now = new Date();
+    const autoTitle = now.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+    setJournalSaving(true);
+    try {
+      let uploadedUrl = "";
+      if (journalBlob) {
+        try {
+          const config = await loadConfig();
+          const agent = new HttpAgent({
+            identity: identity ?? undefined,
+            host: config.backend_host,
+          });
+          const client = new StorageClient(
+            config.bucket_name,
+            config.storage_gateway_url,
+            config.backend_canister_id,
+            config.project_id,
+            agent,
+          );
+          const bytes = new Uint8Array(await journalBlob.arrayBuffer());
+          const { hash } = await client.putFile(bytes);
+          uploadedUrl = await client.getDirectURL(hash);
+        } catch (_) {
+          uploadedUrl = journalBlobUrl || "";
+        }
+      }
+      const transcript =
+        journalMode === "text" ? journalText : journalTranscript;
+      const entryType =
+        journalMode.charAt(0).toUpperCase() + journalMode.slice(1);
+      await (actor as any).saveJournalEntry(
+        autoTitle,
+        entryType,
+        uploadedUrl,
+        transcript,
+      );
+      await loadJournalEntries();
+      toast.success("Journal entry saved!");
+      setJournalBlob(null);
+      setJournalBlobUrl(null);
+      setJournalTranscript("");
+      setJournalText("");
+    } catch (_) {
+      toast.error("Failed to save journal entry.");
+    } finally {
+      setJournalSaving(false);
+    }
+  };
+
+  const handleAnalyzeJournal = async (entry: JournalEntry) => {
+    if (!actor) return;
+    setJournalAnalyzingId(entry.id);
+    try {
+      const textToAnalyze = entry.transcript || entry.title;
+      const result = await (actor as any).analyzeText(
+        textToAnalyze,
+        "Journal entry for mind twin training",
+      );
+      await (actor as any).updateJournalEntry(
+        entry.id,
+        entry.title,
+        result,
+        "",
+      );
+      await loadJournalEntries();
+      toast.success("Analysis complete!");
+    } catch (_) {
+      toast.error("Analysis failed.");
+    } finally {
+      setJournalAnalyzingId(null);
+    }
+  };
+
+  const handleDeleteJournal = async (id: string) => {
+    if (!actor || !confirm("Delete this journal entry?")) return;
+    await (actor as any).deleteJournalEntry(id).catch(() => {});
+    await loadJournalEntries();
+  };
+
+  const handleRenameJournal = async (entry: JournalEntry) => {
+    if (!actor || !editingTitleVal.trim()) return;
+    await (actor as any)
+      .updateJournalEntry(
+        entry.id,
+        editingTitleVal,
+        entry.aiAnalysis,
+        entry.dimensionSignals,
+      )
+      .catch(() => {});
+    setEditingTitleId(null);
+    await loadJournalEntries();
+  };
+
   const latestScores =
     assessments.length > 0 ? assessments[0].dimensionScores : null;
-
   const versionA = versions.find((v) => v.id === compareA);
   const versionB = versions.find((v) => v.id === compareB);
   const currentTwin = versions.find((v) => v.id === deltaCurrentId);
@@ -500,6 +1189,8 @@ export function UserDashboardPage({ onNavigate }: Props) {
     return tips[dim][dir];
   }
 
+  const gold = "#C8A24A";
+
   return (
     <div
       className="min-h-screen"
@@ -518,6 +1209,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
               type="button"
               onClick={() => onNavigate("myDecisionTwin")}
               className="text-white/50 hover:text-white text-sm transition-colors"
+              data-ocid="dashboard.back.button"
             >
               ← Back
             </button>
@@ -528,7 +1220,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
               {profile && (
                 <p className="text-white/50 text-xs">
                   {profile.name || ""}{" "}
-                  {profile.country ? `· ${profile.country}` : ""}
+                  {profile.country ? `\u00b7 ${profile.country}` : ""}
                 </p>
               )}
             </div>
@@ -541,9 +1233,10 @@ export function UserDashboardPage({ onNavigate }: Props) {
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold"
                 style={{
                   backgroundColor: "rgba(200,162,74,0.15)",
-                  color: "#C8A24A",
+                  color: gold,
                   border: "1px solid rgba(200,162,74,0.3)",
                 }}
+                data-ocid="dashboard.admin.button"
               >
                 Admin Panel
               </button>
@@ -555,6 +1248,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                 onNavigate("landing");
               }}
               className="px-3 py-1.5 rounded-lg text-xs font-medium text-white/60 hover:text-white border border-white/20 hover:border-white/40 transition-colors"
+              data-ocid="dashboard.signout.button"
             >
               Sign Out
             </button>
@@ -572,10 +1266,10 @@ export function UserDashboardPage({ onNavigate }: Props) {
                 className="flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all"
                 style={{
                   borderBottomColor:
-                    activeTab === tab.id ? "#C8A24A" : "transparent",
-                  color:
-                    activeTab === tab.id ? "#C8A24A" : "rgba(255,255,255,0.5)",
+                    activeTab === tab.id ? gold : "transparent",
+                  color: activeTab === tab.id ? gold : "rgba(255,255,255,0.5)",
                 }}
+                data-ocid={`dashboard.${tab.id}.tab`}
               >
                 <span>{tab.icon}</span>
                 {tab.label}
@@ -586,7 +1280,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* TAB 1: My Mind Twin */}
+        {/* ─── TAB 1: My Mind Twin ─────────────────────────────────── */}
         {activeTab === "twin" && (
           <div>
             <div className="flex items-center justify-between mb-6">
@@ -596,10 +1290,15 @@ export function UserDashboardPage({ onNavigate }: Props) {
                 onClick={() => {
                   setShowAssessment(!showAssessment);
                   setAsmStep(0);
-                  setAsmResponses(Array(36).fill(0));
+                  setAsmResponses(
+                    Array(36)
+                      .fill(null)
+                      .map(() => ({ ...EMPTY_RESPONSE })),
+                  );
                 }}
                 className="px-4 py-2 rounded-lg text-sm font-semibold"
-                style={{ backgroundColor: "#C8A24A", color: "#1B4332" }}
+                style={{ backgroundColor: gold, color: "#1B4332" }}
+                data-ocid="twin.assessment.button"
               >
                 {showAssessment ? "Cancel" : "Take New Assessment"}
               </button>
@@ -611,7 +1310,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                   <div className="flex items-center justify-between mb-2">
                     <span
                       className="text-sm font-semibold"
-                      style={{ color: "#C8A24A" }}
+                      style={{ color: gold }}
                     >
                       Dimension {asmStep + 1} of 6:{" "}
                       {DIMENSION_LABELS[currentDim]}
@@ -625,110 +1324,73 @@ export function UserDashboardPage({ onNavigate }: Props) {
                       className="h-1.5 rounded-full"
                       style={{
                         width: `${((asmStep + 1) / 6) * 100}%`,
-                        backgroundColor: "#C8A24A",
+                        backgroundColor: gold,
                       }}
                     />
                   </div>
-                  {/* Dimension description */}
-                  {(() => {
-                    const DIMENSION_DESCRIPTIONS: Record<string, string> = {
-                      pm: "This set explores how you structure, plan, and manage your decision-making process. High scorers are methodical and systematic; lower scorers tend to be more intuitive or spontaneous.",
-                      em: "These questions reveal how your emotions influence your choices and how well you manage emotional responses under pressure. High scorers stay composed; lower scorers may be more reactive.",
-                      rrm: "This dimension measures your appetite for risk, how you evaluate trade-offs, and whether you lean toward caution or boldness. High scorers embrace calculated risk; lower scorers prefer certainty.",
-                      iai: "These questions probe how you gather, process, and weigh information before deciding. High scorers are analytical and data-driven; lower scorers trust instinct over evidence.",
-                      sis: "This set examines how social dynamics, group influence, and interpersonal relationships shape your decisions. High scorers navigate social complexity well; lower scorers may find it challenging.",
-                      edi: "These questions assess how quickly and decisively you act once a decision is made, and how well you follow through. High scorers are decisive executors; lower scorers may overthink before acting.",
-                    };
-                    return (
-                      <div
-                        className="mb-5 p-4 rounded-xl"
-                        style={{
-                          backgroundColor: "rgba(200,162,74,0.07)",
-                          border: "1px solid rgba(200,162,74,0.15)",
-                        }}
+                  <div
+                    className="mt-4 mb-5 p-4 rounded-xl"
+                    style={{
+                      backgroundColor: "rgba(200,162,74,0.07)",
+                      border: "1px solid rgba(200,162,74,0.15)",
+                    }}
+                  >
+                    <p className="text-white/75 text-sm leading-relaxed">
+                      {DIMENSION_DESCRIPTIONS[currentDim]}
+                    </p>
+                    <div className="flex items-center justify-between mt-3 px-1">
+                      <span
+                        className="text-xs"
+                        style={{ color: "rgba(255,255,255,0.35)" }}
                       >
-                        <p className="text-white/75 text-sm leading-relaxed">
-                          {DIMENSION_DESCRIPTIONS[currentDim]}
-                        </p>
-                        <div className="flex items-center justify-between mt-3 px-1">
-                          <span
-                            className="text-xs"
-                            style={{ color: "rgba(255,255,255,0.35)" }}
-                          >
-                            1 = Strongly Disagree
-                          </span>
-                          <span
-                            className="text-xs"
-                            style={{ color: "rgba(200,162,74,0.7)" }}
-                          >
-                            4 = Neutral
-                          </span>
-                          <span
-                            className="text-xs"
-                            style={{ color: "rgba(255,255,255,0.35)" }}
-                          >
-                            7 = Strongly Agree
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })()}
+                        1 = Not at all like me
+                      </span>
+                      <span
+                        className="text-xs"
+                        style={{ color: "rgba(200,162,74,0.7)" }}
+                      >
+                        4 = Somewhat like me
+                      </span>
+                      <span
+                        className="text-xs"
+                        style={{ color: "rgba(255,255,255,0.35)" }}
+                      >
+                        7 = Very much like me
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-5">
+
+                <div className="space-y-4">
                   {stepQs.map((q, qi) => {
                     const idx = stepStart + qi;
                     return (
-                      <div key={idx}>
-                        <p className="text-white/80 text-sm mb-3">
-                          <span
-                            className="font-bold"
-                            style={{ color: "#C8A24A" }}
-                          >
-                            {idx + 1}.
-                          </span>{" "}
-                          {q.text}
-                        </p>
-                        <div className="flex gap-1">
-                          {LIKERT.map((v) => (
-                            <button
-                              key={v}
-                              type="button"
-                              onClick={() => {
-                                const r = [...asmResponses];
-                                r[idx] = v;
-                                setAsmResponses(r);
-                              }}
-                              className="flex-1 py-2 rounded-lg text-xs font-bold transition-all"
-                              style={{
-                                backgroundColor:
-                                  asmResponses[idx] === v
-                                    ? "#C8A24A"
-                                    : "rgba(255,255,255,0.07)",
-                                color:
-                                  asmResponses[idx] === v
-                                    ? "#1B4332"
-                                    : "rgba(255,255,255,0.5)",
-                                border: "1px solid",
-                                borderColor:
-                                  asmResponses[idx] === v
-                                    ? "#C8A24A"
-                                    : "rgba(255,255,255,0.1)",
-                              }}
-                            >
-                              {v}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                      <MultimodalInputWidget
+                        key={q.id}
+                        question={q.text}
+                        dimensionLabel={DIMENSION_LABELS[currentDim]}
+                        questionNumber={idx + 1}
+                        currentResponse={asmResponses[idx]}
+                        skipLabel={q.skipLabel}
+                        onResponse={(resp) => {
+                          setAsmResponses((prev) => {
+                            const next = [...prev];
+                            next[idx] = resp;
+                            return next;
+                          });
+                        }}
+                      />
                     );
                   })}
                 </div>
+
                 <div className="flex justify-between mt-6">
                   <button
                     type="button"
                     disabled={asmStep === 0}
                     onClick={() => setAsmStep((s) => s - 1)}
                     className="px-4 py-2 rounded-lg text-sm border border-white/20 text-white/60 disabled:opacity-30"
+                    data-ocid="assessment.back.button"
                   >
                     ← Back
                   </button>
@@ -738,7 +1400,8 @@ export function UserDashboardPage({ onNavigate }: Props) {
                       disabled={!allAnswered}
                       onClick={() => setAsmStep((s) => s + 1)}
                       className="px-6 py-2 rounded-lg text-sm font-bold disabled:opacity-40"
-                      style={{ backgroundColor: "#C8A24A", color: "#1B4332" }}
+                      style={{ backgroundColor: gold, color: "#1B4332" }}
+                      data-ocid="assessment.next.button"
                     >
                       Next →
                     </button>
@@ -748,7 +1411,8 @@ export function UserDashboardPage({ onNavigate }: Props) {
                       disabled={!allAnswered || asmSubmitting}
                       onClick={handleAsmSubmit}
                       className="px-6 py-2 rounded-lg text-sm font-bold disabled:opacity-40"
-                      style={{ backgroundColor: "#C8A24A", color: "#1B4332" }}
+                      style={{ backgroundColor: gold, color: "#1B4332" }}
+                      data-ocid="assessment.submit.button"
                     >
                       {asmSubmitting ? "Saving..." : "Submit Assessment"}
                     </button>
@@ -773,12 +1437,10 @@ export function UserDashboardPage({ onNavigate }: Props) {
                         <div key={dim}>
                           <div className="flex justify-between text-sm mb-1">
                             <span className="text-white/70">
-                              {DIMENSION_SHORT[dim]} — {DIMENSION_LABELS[dim]}
+                              {DIMENSION_SHORT[dim]} \u2014{" "}
+                              {DIMENSION_LABELS[dim]}
                             </span>
-                            <span
-                              style={{ color: "#C8A24A" }}
-                              className="font-bold"
-                            >
+                            <span style={{ color: gold }} className="font-bold">
                               {(
                                 latestScores[
                                   dim as keyof typeof latestScores
@@ -791,7 +1453,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                               className="h-2 rounded-full"
                               style={{
                                 width: `${((latestScores[dim as keyof typeof latestScores] as number) / 7) * 100}%`,
-                                backgroundColor: "#C8A24A",
+                                backgroundColor: gold,
                               }}
                             />
                           </div>
@@ -835,7 +1497,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                           ).toLocaleDateString()}
                         </span>
                       </div>
-                      <span style={{ color: "#C8A24A" }} className="text-xs">
+                      <span style={{ color: gold }} className="text-xs">
                         {a.decisionForceLevel}
                       </span>
                     </div>
@@ -846,7 +1508,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
           </div>
         )}
 
-        {/* TAB 2: Twin Builder */}
+        {/* ─── TAB 2: Twin Builder ───────────────────────────────────── */}
         {activeTab === "builder" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div>
@@ -857,7 +1519,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                   style={{
                     backgroundColor: "rgba(200,162,74,0.1)",
                     border: "1px solid rgba(200,162,74,0.25)",
-                    color: "#C8A24A",
+                    color: gold,
                   }}
                 >
                   Take an assessment first to seed your base values.
@@ -882,6 +1544,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                       border: "1px solid rgba(255,255,255,0.15)",
                     }}
                     placeholder="e.g. Bold Me, Calm Me, Future Me"
+                    data-ocid="builder.version_name.input"
                   />
                 </div>
                 <div className="space-y-5 mb-5">
@@ -889,12 +1552,9 @@ export function UserDashboardPage({ onNavigate }: Props) {
                     <div key={dim}>
                       <div className="flex justify-between text-sm mb-2">
                         <span className="text-white/70">
-                          {DIMENSION_SHORT[dim]} — {DIMENSION_LABELS[dim]}
+                          {DIMENSION_SHORT[dim]} \u2014 {DIMENSION_LABELS[dim]}
                         </span>
-                        <span
-                          style={{ color: "#C8A24A" }}
-                          className="font-bold"
-                        >
+                        <span style={{ color: gold }} className="font-bold">
                           {bSliders[dim].toFixed(1)}
                         </span>
                       </div>
@@ -911,6 +1571,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                           }))
                         }
                         className="w-full accent-yellow-500"
+                        data-ocid={`builder.${dim}.input`}
                       />
                       {latestScores && (
                         <div className="text-xs text-white/30 mt-1">
@@ -943,6 +1604,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                     }}
                     rows={2}
                     placeholder="What does this version represent?"
+                    data-ocid="builder.notes.textarea"
                   />
                 </div>
                 <button
@@ -950,7 +1612,8 @@ export function UserDashboardPage({ onNavigate }: Props) {
                   onClick={handleSaveTwin}
                   disabled={bSaving || !bVersionName.trim()}
                   className="w-full py-3 rounded-xl font-bold text-sm disabled:opacity-50"
-                  style={{ backgroundColor: "#C8A24A", color: "#1B4332" }}
+                  style={{ backgroundColor: gold, color: "#1B4332" }}
+                  data-ocid="builder.save.button"
                 >
                   {bSaving ? "Saving..." : "Save Twin Version"}
                 </button>
@@ -962,7 +1625,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                 <GreenCard>
                   <div
                     className="mb-3 text-xs font-semibold"
-                    style={{ color: "#C8A24A", letterSpacing: "0.08em" }}
+                    style={{ color: gold, letterSpacing: "0.08em" }}
                   >
                     DCFM DECISION FORCE
                   </div>
@@ -1012,10 +1675,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                 </GreenCard>
               ) : (
                 <GreenCard>
-                  <div
-                    className="text-center py-6"
-                    style={{ color: "#C8A24A" }}
-                  >
+                  <div className="text-center py-6" style={{ color: gold }}>
                     Take an assessment first to see your Simulation Preview.
                   </div>
                 </GreenCard>
@@ -1024,7 +1684,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
           </div>
         )}
 
-        {/* TAB 3: My Versions */}
+        {/* ─── TAB 3: My Versions ──────────────────────────────────── */}
         {activeTab === "versions" && (
           <div>
             <div className="flex items-center justify-between mb-6">
@@ -1035,14 +1695,14 @@ export function UserDashboardPage({ onNavigate }: Props) {
                 className="px-4 py-2 rounded-lg text-sm font-semibold"
                 style={{
                   backgroundColor: "rgba(200,162,74,0.15)",
-                  color: "#C8A24A",
+                  color: gold,
                   border: "1px solid rgba(200,162,74,0.3)",
                 }}
+                data-ocid="versions.create.button"
               >
                 + Create New
               </button>
             </div>
-
             {versions.length === 0 ? (
               <GreenCard className="text-center py-12">
                 <div className="text-4xl mb-3">📂</div>
@@ -1054,8 +1714,8 @@ export function UserDashboardPage({ onNavigate }: Props) {
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
-                  {versions.map((v) => (
-                    <GreenCard key={v.id}>
+                  {versions.map((v, vi) => (
+                    <GreenCard key={v.id} data-ocid={`versions.item.${vi + 1}`}>
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <h3 className="font-bold">{v.versionName}</h3>
@@ -1069,6 +1729,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                           type="button"
                           onClick={() => handleDeleteVersion(v.id)}
                           className="text-white/30 hover:text-red-400 text-xs"
+                          data-ocid={`versions.delete_button.${vi + 1}`}
                         >
                           Delete
                         </button>
@@ -1084,7 +1745,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                                 className="h-1.5 rounded-full"
                                 style={{
                                   width: `${((v[dim as keyof TwinVersion] as number) / 7) * 100}%`,
-                                  backgroundColor: "#C8A24A",
+                                  backgroundColor: gold,
                                 }}
                               />
                             </div>
@@ -1117,6 +1778,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                           backgroundColor: "rgba(255,255,255,0.07)",
                           border: "1px solid rgba(255,255,255,0.15)",
                         }}
+                        data-ocid="versions.compare_a.select"
                       >
                         <option value="" style={{ backgroundColor: "#1B4332" }}>
                           Version A
@@ -1139,6 +1801,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                           backgroundColor: "rgba(255,255,255,0.07)",
                           border: "1px solid rgba(255,255,255,0.15)",
                         }}
+                        data-ocid="versions.compare_b.select"
                       >
                         <option value="" style={{ backgroundColor: "#1B4332" }}>
                           Version B
@@ -1159,7 +1822,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                         <div>
                           <p
                             className="text-center text-sm font-semibold mb-3"
-                            style={{ color: "#C8A24A" }}
+                            style={{ color: gold }}
                           >
                             {versionA.versionName}
                           </p>
@@ -1179,7 +1842,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                         <div>
                           <p
                             className="text-center text-sm font-semibold mb-3"
-                            style={{ color: "#C8A24A" }}
+                            style={{ color: gold }}
                           >
                             {versionB.versionName}
                           </p>
@@ -1205,7 +1868,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
           </div>
         )}
 
-        {/* TAB 4: Simulation Lab */}
+        {/* ─── TAB 4: Simulation Lab ──────────────────────────────── */}
         {activeTab === "simlab" && (
           <div className="max-w-3xl">
             <h2 className="text-xl font-bold mb-6">Simulation Lab</h2>
@@ -1227,6 +1890,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                   border: "1px solid rgba(255,255,255,0.15)",
                 }}
                 rows={4}
+                data-ocid="simlab.scenario.textarea"
               />
             </GreenCard>
 
@@ -1273,7 +1937,8 @@ export function UserDashboardPage({ onNavigate }: Props) {
               onClick={runSimulation}
               disabled={!scenario.trim() || selectedVersionIds.length === 0}
               className="mb-8 px-8 py-3 rounded-xl font-bold text-sm disabled:opacity-40"
-              style={{ backgroundColor: "#C8A24A", color: "#1B4332" }}
+              style={{ backgroundColor: gold, color: "#1B4332" }}
+              data-ocid="simlab.run.button"
             >
               Run Simulation
             </button>
@@ -1281,8 +1946,6 @@ export function UserDashboardPage({ onNavigate }: Props) {
             {simResult && (
               <div className="space-y-6">
                 <h3 className="text-lg font-bold">Simulation Results</h3>
-
-                {/* Scenario Summary Banner */}
                 <div
                   className="rounded-2xl px-6 py-4"
                   style={{
@@ -1299,14 +1962,9 @@ export function UserDashboardPage({ onNavigate }: Props) {
                   </p>
                 </div>
 
-                {/* Per-version result cards */}
                 {simResult.map((r, idx) => {
                   const forceColor =
-                    r.force >= 8
-                      ? "#4ade80"
-                      : r.force >= 5
-                        ? "#C8A24A"
-                        : "#f87171";
+                    r.force >= 8 ? "#4ade80" : r.force >= 5 ? gold : "#f87171";
                   const fillPct = Math.min(
                     100,
                     Math.max(0, (r.force / 15) * 100),
@@ -1316,8 +1974,8 @@ export function UserDashboardPage({ onNavigate }: Props) {
                       key={r.name}
                       className="rounded-2xl overflow-hidden"
                       style={{ border: "1px solid rgba(255,255,255,0.12)" }}
+                      data-ocid={`simlab.item.${idx + 1}`}
                     >
-                      {/* Header */}
                       <div
                         className="px-6 py-4 flex items-center justify-between"
                         style={{ backgroundColor: "rgba(255,255,255,0.06)" }}
@@ -1340,12 +1998,10 @@ export function UserDashboardPage({ onNavigate }: Props) {
                           </span>
                         </div>
                       </div>
-
                       <div
                         className="px-6 py-5 space-y-5"
                         style={{ backgroundColor: "rgba(255,255,255,0.02)" }}
                       >
-                        {/* Interpretation headline */}
                         <div className="flex items-center gap-2">
                           <span className="text-xl">
                             {r.force >= 8 ? "⚡" : r.force >= 5 ? "🎯" : "⏸️"}
@@ -1357,8 +2013,6 @@ export function UserDashboardPage({ onNavigate }: Props) {
                             {r.interpretation}
                           </span>
                         </div>
-
-                        {/* Decision Force Meter */}
                         <div>
                           <div className="flex justify-between text-xs text-white/40 mb-1">
                             <span>Decision Force Meter</span>
@@ -1366,20 +2020,14 @@ export function UserDashboardPage({ onNavigate }: Props) {
                           </div>
                           <div className="h-3 rounded-full bg-white/10 overflow-hidden">
                             <div
-                              className="h-3 rounded-full transition-all"
+                              className="h-3 rounded-full"
                               style={{
                                 width: `${fillPct}%`,
                                 background: `linear-gradient(90deg, ${forceColor}99, ${forceColor})`,
                               }}
                             />
                           </div>
-                          <div className="flex justify-between text-xs text-white/25 mt-0.5">
-                            <span>Low</span>
-                            <span>High</span>
-                          </div>
                         </div>
-
-                        {/* 4 Key Metrics Grid */}
                         <div className="grid grid-cols-2 gap-3">
                           {[
                             {
@@ -1421,12 +2069,10 @@ export function UserDashboardPage({ onNavigate }: Props) {
                             </div>
                           ))}
                         </div>
-
-                        {/* Cognitive Signals */}
                         <div>
                           <div
                             className="text-xs font-bold uppercase tracking-widest mb-2"
-                            style={{ color: "#C8A24A" }}
+                            style={{ color: gold }}
                           >
                             Cognitive Signals
                           </div>
@@ -1438,7 +2084,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                               >
                                 <span
                                   className="mt-0.5 text-xs"
-                                  style={{ color: "#C8A24A" }}
+                                  style={{ color: gold }}
                                 >
                                   ▸
                                 </span>
@@ -1447,8 +2093,6 @@ export function UserDashboardPage({ onNavigate }: Props) {
                             ))}
                           </ul>
                         </div>
-
-                        {/* Scenario Insight */}
                         <div
                           className="rounded-xl p-4"
                           style={{
@@ -1458,7 +2102,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                         >
                           <div
                             className="text-xs font-bold uppercase tracking-widest mb-2"
-                            style={{ color: "#C8A24A" }}
+                            style={{ color: gold }}
                           >
                             Scenario Insight
                           </div>
@@ -1471,7 +2115,6 @@ export function UserDashboardPage({ onNavigate }: Props) {
                   );
                 })}
 
-                {/* Comparison Summary (2+ versions) */}
                 {simResult.length >= 2 &&
                   (() => {
                     const sorted = [...simResult].sort(
@@ -1495,8 +2138,6 @@ export function UserDashboardPage({ onNavigate }: Props) {
                             Which version handles this best?
                           </h4>
                         </div>
-
-                        {/* Bar comparison */}
                         <div className="space-y-3 mb-5">
                           {sorted.map((r) => {
                             const pct = Math.min(
@@ -1519,7 +2160,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                                     className="text-xs font-bold"
                                     style={{
                                       color: isTop
-                                        ? "#C8A24A"
+                                        ? gold
                                         : "rgba(255,255,255,0.4)",
                                     }}
                                   >
@@ -1532,7 +2173,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                                     style={{
                                       width: `${pct}%`,
                                       background: isTop
-                                        ? "linear-gradient(90deg, #C8A24A88, #C8A24A)"
+                                        ? `linear-gradient(90deg, ${gold}88, ${gold})`
                                         : "rgba(255,255,255,0.2)",
                                     }}
                                   />
@@ -1541,13 +2182,8 @@ export function UserDashboardPage({ onNavigate }: Props) {
                             );
                           })}
                         </div>
-
-                        {/* Coaching recommendation */}
                         <div className="text-sm text-white/80 leading-relaxed">
-                          <span
-                            className="font-bold"
-                            style={{ color: "#C8A24A" }}
-                          >
+                          <span className="font-bold" style={{ color: gold }}>
                             {best.name}
                           </span>{" "}
                           leads with a Decision Force of{" "}
@@ -1559,8 +2195,8 @@ export function UserDashboardPage({ onNavigate }: Props) {
                             : ""}
                           .{" "}
                           {delta > 3
-                            ? `The gap between ${best.name} and ${worst.name} is substantial — consider what beliefs or habits are holding your ${worst.name} back from this level of decisiveness.`
-                            : `The versions are close — small cognitive shifts could bring ${worst.name} to match ${best.name}'s decision clarity.`}
+                            ? `The gap between ${best.name} and ${worst.name} is substantial \u2014 consider what beliefs or habits are holding your ${worst.name} back from this level of decisiveness.`
+                            : `The versions are close \u2014 small cognitive shifts could bring ${worst.name} to match ${best.name}\u2019s decision clarity.`}
                         </div>
                       </div>
                     );
@@ -1570,12 +2206,10 @@ export function UserDashboardPage({ onNavigate }: Props) {
           </div>
         )}
 
-        {/* TAB 5: Growth Path */}
+        {/* ─── TAB 5: Growth Path ─────────────────────────────────── */}
         {activeTab === "growth" && (
           <div className="space-y-8">
             <h2 className="text-xl font-bold">Growth Path</h2>
-
-            {/* Delta Engine */}
             <GreenCard>
               <h3 className="font-bold mb-4">Twin Delta Engine</h3>
               <p className="text-white/50 text-sm mb-4">
@@ -1598,6 +2232,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                       backgroundColor: "rgba(255,255,255,0.07)",
                       border: "1px solid rgba(255,255,255,0.15)",
                     }}
+                    data-ocid="growth.current.select"
                   >
                     <option value="" style={{ backgroundColor: "#1B4332" }}>
                       Select version
@@ -1629,6 +2264,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                       backgroundColor: "rgba(255,255,255,0.07)",
                       border: "1px solid rgba(255,255,255,0.15)",
                     }}
+                    data-ocid="growth.target.select"
                   >
                     <option value="" style={{ backgroundColor: "#1B4332" }}>
                       Select version
@@ -1667,7 +2303,8 @@ export function UserDashboardPage({ onNavigate }: Props) {
                       >
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-semibold text-sm">
-                            {DIMENSION_SHORT[dim]} — {DIMENSION_LABELS[dim]}
+                            {DIMENSION_SHORT[dim]} \u2014{" "}
+                            {DIMENSION_LABELS[dim]}
                           </span>
                           <span
                             className="text-sm font-bold"
@@ -1677,13 +2314,13 @@ export function UserDashboardPage({ onNavigate }: Props) {
                                   ? "#4ade80"
                                   : delta < 0
                                     ? "#f87171"
-                                    : "#C8A24A",
+                                    : gold,
                             }}
                           >
                             {delta > 0
-                              ? `↑ +${pct}%`
+                              ? `\u2191 +${pct}%`
                               : delta < 0
-                                ? `↓ -${pct}%`
+                                ? `\u2193 -${pct}%`
                                 : "= On Track"}
                           </span>
                         </div>
@@ -1694,7 +2331,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                               currentTwin[dim as keyof TwinVersion] as number
                             ).toFixed(1)}
                           </span>
-                          <span>→</span>
+                          <span>\u2192</span>
                           <span>
                             Target:{" "}
                             {(
@@ -1702,7 +2339,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                             ).toFixed(1)}
                           </span>
                         </div>
-                        <p className="text-xs" style={{ color: "#C8A24A" }}>
+                        <p className="text-xs" style={{ color: gold }}>
                           💡 {coachingTip(dim, delta)}
                         </p>
                       </div>
@@ -1730,6 +2367,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                     border: "1px solid rgba(255,255,255,0.15)",
                   }}
                   rows={2}
+                  data-ocid="growth.log_scenario.textarea"
                 />
                 <input
                   type="text"
@@ -1741,6 +2379,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                     backgroundColor: "rgba(255,255,255,0.07)",
                     border: "1px solid rgba(255,255,255,0.15)",
                   }}
+                  data-ocid="growth.log_twin.input"
                 />
                 <input
                   type="text"
@@ -1752,6 +2391,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                     backgroundColor: "rgba(255,255,255,0.07)",
                     border: "1px solid rgba(255,255,255,0.15)",
                   }}
+                  data-ocid="growth.log_outcome.input"
                 />
                 <input
                   type="text"
@@ -1763,6 +2403,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                     backgroundColor: "rgba(255,255,255,0.07)",
                     border: "1px solid rgba(255,255,255,0.15)",
                   }}
+                  data-ocid="growth.log_actual.input"
                 />
               </div>
               <button
@@ -1770,7 +2411,8 @@ export function UserDashboardPage({ onNavigate }: Props) {
                 onClick={handleLogDecision}
                 disabled={logSaving || !logScenario.trim()}
                 className="px-6 py-2 rounded-xl font-bold text-sm disabled:opacity-40"
-                style={{ backgroundColor: "#C8A24A", color: "#1B4332" }}
+                style={{ backgroundColor: gold, color: "#1B4332" }}
+                data-ocid="growth.log.button"
               >
                 {logSaving ? "Saving..." : "Log Decision"}
               </button>
@@ -1779,7 +2421,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                 <div className="mt-6">
                   <h4 className="font-semibold text-sm mb-3">Past Decisions</h4>
                   <div className="space-y-3">
-                    {decisionLogs.slice(0, 10).map((log) => (
+                    {decisionLogs.slice(0, 10).map((log, li) => (
                       <div
                         key={log.id}
                         className="rounded-xl p-4"
@@ -1787,6 +2429,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                           backgroundColor: "rgba(255,255,255,0.04)",
                           border: "1px solid rgba(255,255,255,0.07)",
                         }}
+                        data-ocid={`growth.log.item.${li + 1}`}
                       >
                         <p className="text-white text-sm font-medium mb-1">
                           {log.scenario}
@@ -1795,18 +2438,18 @@ export function UserDashboardPage({ onNavigate }: Props) {
                           <span>
                             Twin:{" "}
                             <span className="text-white/60">
-                              {log.twinVersionUsed || "—"}
+                              {log.twinVersionUsed || "\u2014"}
                             </span>
                           </span>
                           <span>
                             Predicted:{" "}
                             <span className="text-white/60">
-                              {log.decisionOutcome || "—"}
+                              {log.decisionOutcome || "\u2014"}
                             </span>
                           </span>
                           <span>
                             Actual:{" "}
-                            <span style={{ color: "#C8A24A" }}>
+                            <span style={{ color: gold }}>
                               {log.actualOutcome || "Pending"}
                             </span>
                           </span>
@@ -1822,6 +2465,431 @@ export function UserDashboardPage({ onNavigate }: Props) {
                 </div>
               )}
             </GreenCard>
+          </div>
+        )}
+
+        {/* ─── TAB 6: My Day Journal ─────────────────────────────── */}
+        {activeTab === "journal" && (
+          <div className="space-y-6">
+            {/* Hero Header */}
+            <div
+              className="rounded-2xl px-8 py-10 text-center"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(200,162,74,0.12) 0%, rgba(27,67,50,0.5) 100%)",
+                border: "1px solid rgba(200,162,74,0.25)",
+              }}
+            >
+              <div className="text-4xl mb-3">📓</div>
+              <h2 className="text-2xl font-bold mb-2">
+                Tell Me About Your Day
+              </h2>
+              <p className="text-white/60 text-sm max-w-lg mx-auto leading-relaxed">
+                Share anything \u2014 what happened, how you felt, what
+                you\u2019re thinking. Your twin learns from every entry. No
+                filters needed.
+              </p>
+            </div>
+
+            {/* Recording Panel */}
+            <GreenCard>
+              {/* Mode switcher */}
+              <div
+                className="flex gap-1 p-1 rounded-xl mb-5 w-fit"
+                style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
+              >
+                {(["text", "audio", "video"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => {
+                      setJournalMode(m);
+                      if (m === "video") setJournalVideoEnabled(true);
+                    }}
+                    className="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+                    style={{
+                      backgroundColor: journalMode === m ? gold : "transparent",
+                      color:
+                        journalMode === m ? "#1B4332" : "rgba(255,255,255,0.4)",
+                    }}
+                    data-ocid={`journal.${m}_mode.toggle`}
+                  >
+                    {m === "text"
+                      ? "📝 Write"
+                      : m === "audio"
+                        ? "🎙 Audio"
+                        : "🎥 Video"}
+                  </button>
+                ))}
+              </div>
+
+              {journalMode === "video" && !journalVideoEnabled && (
+                <div
+                  className="mb-4 px-4 py-3 rounded-xl text-sm"
+                  style={{
+                    backgroundColor: "rgba(200,162,74,0.1)",
+                    border: "1px solid rgba(200,162,74,0.25)",
+                    color: gold,
+                  }}
+                >
+                  💡 Video gives your twin more signals to work with \u2014
+                  facial expressions, micro-emotions, energy levels. Highly
+                  recommended.
+                </div>
+              )}
+
+              {/* Text mode */}
+              {journalMode === "text" && (
+                <div>
+                  <textarea
+                    value={journalText}
+                    onChange={(e) => setJournalText(e.target.value)}
+                    placeholder="How was your day? What decisions did you make? What did you feel? What\u2019s on your mind?"
+                    className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none resize-none"
+                    style={{
+                      backgroundColor: "rgba(255,255,255,0.07)",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                      minHeight: 160,
+                    }}
+                    data-ocid="journal.text.textarea"
+                  />
+                  {journalText.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleSaveJournalEntry}
+                      disabled={journalSaving}
+                      className="mt-3 px-6 py-2.5 rounded-xl font-bold text-sm disabled:opacity-50"
+                      style={{ backgroundColor: gold, color: "#1B4332" }}
+                      data-ocid="journal.save.button"
+                    >
+                      {journalSaving ? "Saving..." : "Save Entry"}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Audio/Video recording mode */}
+              {(journalMode === "audio" || journalMode === "video") && (
+                <div>
+                  {journalRecording ? (
+                    <div>
+                      {journalMode === "video" && (
+                        <video
+                          ref={journalVideoRef}
+                          className="w-full rounded-xl mb-3"
+                          style={{ maxHeight: 240, backgroundColor: "#000" }}
+                          autoPlay
+                          muted
+                          playsInline
+                        />
+                      )}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <span
+                            className="w-3 h-3 rounded-full animate-pulse"
+                            style={{ backgroundColor: "#ef4444" }}
+                          />
+                          <span className="text-white font-semibold">
+                            {journalMode === "video"
+                              ? "Recording video..."
+                              : "Recording audio..."}
+                          </span>
+                        </div>
+                        <span
+                          className="font-mono text-sm"
+                          style={{ color: gold }}
+                        >
+                          {formatTimer(journalTimeLeft)} remaining
+                        </span>
+                      </div>
+                      {journalTranscript && (
+                        <p
+                          className="text-white/40 text-xs italic mb-4 px-3 py-2 rounded-lg"
+                          style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
+                        >
+                          “{journalTranscript}”
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={stopJournalRecording}
+                        className="w-full py-3 rounded-xl font-semibold text-sm"
+                        style={{ backgroundColor: "#ef4444", color: "white" }}
+                        data-ocid="journal.stop.button"
+                      >
+                        ■ Stop Recording
+                      </button>
+                    </div>
+                  ) : journalBlob ? (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-green-400 text-sm">
+                          ✓ {journalMode === "video" ? "Video" : "Audio"}{" "}
+                          recorded
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setJournalBlob(null);
+                            setJournalBlobUrl(null);
+                            setJournalTranscript("");
+                          }}
+                          className="text-white/30 hover:text-red-400 text-xs"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      {journalBlobUrl && journalMode === "audio" && (
+                        // biome-ignore lint/a11y/useMediaCaption: transcript shown below
+                        <audio
+                          controls
+                          src={journalBlobUrl}
+                          className="w-full mb-3"
+                          style={{ height: 40 }}
+                        />
+                      )}
+                      {journalBlobUrl && journalMode === "video" && (
+                        // biome-ignore lint/a11y/useMediaCaption: transcript shown below
+                        <video
+                          controls
+                          src={journalBlobUrl}
+                          className="w-full rounded-xl mb-3"
+                          style={{ maxHeight: 240 }}
+                        />
+                      )}
+                      {journalTranscript && (
+                        <div
+                          className="mb-4 p-3 rounded-xl text-xs text-white/60 italic"
+                          style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
+                        >
+                          “{journalTranscript.slice(0, 300)}
+                          {journalTranscript.length > 300 ? "..." : ""}”
+                        </div>
+                      )}
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={handleSaveJournalEntry}
+                          disabled={journalSaving}
+                          className="flex-1 py-2.5 rounded-xl font-bold text-sm disabled:opacity-50"
+                          style={{ backgroundColor: gold, color: "#1B4332" }}
+                          data-ocid="journal.save.button"
+                        >
+                          {journalSaving ? "Saving..." : "Save Entry"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            startJournalRecording(journalMode === "video")
+                          }
+                          className="px-4 py-2.5 rounded-xl text-sm"
+                          style={{
+                            backgroundColor: "rgba(255,255,255,0.07)",
+                            color: "rgba(255,255,255,0.6)",
+                          }}
+                          data-ocid="journal.rerecord.button"
+                        >
+                          Re-record
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          startJournalRecording(journalMode === "video")
+                        }
+                        className="w-20 h-20 rounded-full mb-4 flex items-center justify-center mx-auto text-3xl transition-transform hover:scale-105"
+                        style={{
+                          backgroundColor: "rgba(200,162,74,0.2)",
+                          border: `2px solid ${gold}`,
+                        }}
+                        data-ocid="journal.record.button"
+                      >
+                        {journalMode === "video" ? "🎥" : "🎙"}
+                      </button>
+                      <p className="text-white/60 text-sm mb-1">
+                        {journalMode === "video"
+                          ? "Start video recording"
+                          : "Start audio recording"}
+                      </p>
+                      <p className="text-white/30 text-xs">Up to 3 minutes</p>
+                      {journalMode === "video" && (
+                        <p
+                          className="text-xs mt-2"
+                          style={{ color: "rgba(200,162,74,0.6)" }}
+                        >
+                          💡 Video gives your twin more signals to work with
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </GreenCard>
+
+            {/* Journal entry feed */}
+            <div>
+              <h3 className="font-bold mb-4">Your Journal Entries</h3>
+              {journalEntries.length === 0 ? (
+                <GreenCard
+                  className="text-center py-10"
+                  data-ocid="journal.empty_state"
+                >
+                  <div className="text-3xl mb-3">📓</div>
+                  <p className="text-white/50 text-sm">
+                    No entries yet. Share your first thought above.
+                  </p>
+                </GreenCard>
+              ) : (
+                <div className="space-y-4">
+                  {[...journalEntries]
+                    .sort((a, b) => Number(b.timestamp) - Number(a.timestamp))
+                    .map((entry, ei) => {
+                      let parsedAnalysis: Record<string, string> | null = null;
+                      if (entry.aiAnalysis) {
+                        try {
+                          parsedAnalysis = JSON.parse(entry.aiAnalysis);
+                        } catch (_) {}
+                      }
+                      const typeColor =
+                        entry.entryType === "Video"
+                          ? "#a78bfa"
+                          : entry.entryType === "Audio"
+                            ? "#34d399"
+                            : gold;
+                      return (
+                        <GreenCard
+                          key={entry.id}
+                          data-ocid={`journal.item.${ei + 1}`}
+                        >
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div className="flex-1">
+                              {editingTitleId === entry.id ? (
+                                <input
+                                  type="text"
+                                  value={editingTitleVal}
+                                  onChange={(e) =>
+                                    setEditingTitleVal(e.target.value)
+                                  }
+                                  onBlur={() => handleRenameJournal(entry)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter")
+                                      handleRenameJournal(entry);
+                                    if (e.key === "Escape")
+                                      setEditingTitleId(null);
+                                  }}
+                                  className="w-full px-2 py-1 rounded-lg text-white text-sm font-semibold outline-none"
+                                  style={{
+                                    backgroundColor: "rgba(255,255,255,0.1)",
+                                    border: `1px solid ${gold}`,
+                                  }}
+                                  data-ocid="journal.title.input"
+                                />
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-semibold text-sm">
+                                    {entry.title}
+                                  </h4>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingTitleId(entry.id);
+                                      setEditingTitleVal(entry.title);
+                                    }}
+                                    className="text-white/25 hover:text-white/60 text-xs transition-colors"
+                                    title="Rename"
+                                    data-ocid={`journal.edit_button.${ei + 1}`}
+                                  >
+                                    ✏️
+                                  </button>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2 mt-1">
+                                <span
+                                  className="text-xs px-2 py-0.5 rounded-full"
+                                  style={{
+                                    backgroundColor: `${typeColor}22`,
+                                    color: typeColor,
+                                  }}
+                                >
+                                  {entry.entryType}
+                                </span>
+                                <span className="text-white/30 text-xs">
+                                  {new Date(
+                                    Number(entry.timestamp) / 1_000_000,
+                                  ).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteJournal(entry.id)}
+                              className="text-white/20 hover:text-red-400 text-sm transition-colors"
+                              data-ocid={`journal.delete_button.${ei + 1}`}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+
+                          {entry.transcript && (
+                            <p className="text-white/50 text-xs italic mb-3 leading-relaxed">
+                              &ldquo;{entry.transcript.slice(0, 150)}
+                              {entry.transcript.length > 150 ? "\u2026" : ""}
+                              &rdquo;
+                            </p>
+                          )}
+
+                          {parsedAnalysis && (
+                            <div className="mb-3">
+                              <div className="text-xs text-white/30 mb-1.5 uppercase tracking-wider">
+                                AI Insights
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {Object.entries(parsedAnalysis).map(
+                                  ([k, v]) => (
+                                    <span
+                                      key={k}
+                                      className="px-2 py-0.5 rounded-full text-xs"
+                                      style={{
+                                        backgroundColor:
+                                          "rgba(200,162,74,0.15)",
+                                        color: gold,
+                                      }}
+                                    >
+                                      {k}: {String(v)}
+                                    </span>
+                                  ),
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {!entry.aiAnalysis && entry.transcript && (
+                            <button
+                              type="button"
+                              onClick={() => handleAnalyzeJournal(entry)}
+                              disabled={journalAnalyzingId === entry.id}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
+                              style={{
+                                backgroundColor: "rgba(200,162,74,0.15)",
+                                color: gold,
+                                border: "1px solid rgba(200,162,74,0.3)",
+                              }}
+                              data-ocid={`journal.analyze_button.${ei + 1}`}
+                            >
+                              {journalAnalyzingId === entry.id
+                                ? "Analysing..."
+                                : "\u2728 Analyse with AI"}
+                            </button>
+                          )}
+                        </GreenCard>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
