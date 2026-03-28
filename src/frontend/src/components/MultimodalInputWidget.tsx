@@ -244,8 +244,8 @@ export function MultimodalInputWidget({
             {m === "scale"
               ? "1\u20137 Scale"
               : m === "text"
-                ? "📝 Type"
-                : "🎙 Audio"}
+                ? "\uD83D\uDCDD Type"
+                : "\uD83C\uDFA4 Audio"}
           </button>
         ))}
         {videoEnabled ? (
@@ -258,15 +258,18 @@ export function MultimodalInputWidget({
               color: mode === "video" ? "#1B4332" : "rgba(255,255,255,0.4)",
             }}
           >
-            🎥 Video
+            \uD83C\uDFA5 Video
           </button>
         ) : (
           <button
             type="button"
-            onClick={() => setVideoEnabled(true)}
+            onClick={() => {
+              setVideoEnabled(true);
+              setMode("video");
+            }}
             className="flex-1 py-1.5 rounded-lg text-xs transition-all"
             style={{ color: "rgba(200,162,74,0.6)" }}
-            title="Video captures more for richer analysis \u2014 optional"
+            title="Video captures more signals for richer analysis \u2014 optional"
           >
             + Video
           </button>
@@ -276,7 +279,8 @@ export function MultimodalInputWidget({
       {/* Video enable notice */}
       {!videoEnabled && mode !== "video" && (
         <p className="text-xs mb-3" style={{ color: "rgba(200,162,74,0.5)" }}>
-          💡 Video captures more signals for richer analysis \u2014 optional
+          \uD83D\uDCA1 Video captures more signals for richer analysis \u2014
+          optional
         </p>
       )}
 
@@ -432,7 +436,7 @@ export function MultimodalInputWidget({
                 }}
                 data-ocid="assessment.audio.button"
               >
-                🎙
+                \uD83C\uDFA4
               </button>
               <p className="text-white/50 text-sm">Press to start recording</p>
               <p className="text-white/30 text-xs mt-1">
@@ -443,19 +447,25 @@ export function MultimodalInputWidget({
         </div>
       )}
 
-      {/* Video mode */}
+      {/* Video mode — video element always rendered, shown only when recording */}
       {mode === "video" && (
         <div>
+          {/* Always-mounted video preview element — hidden when not recording */}
+          <video
+            ref={videoPreviewRef}
+            className="w-full rounded-xl mb-3"
+            style={{
+              maxHeight: 200,
+              backgroundColor: "#000",
+              display: recording ? "block" : "none",
+            }}
+            autoPlay
+            muted
+            playsInline
+          />
+
           {recording ? (
             <div>
-              <video
-                ref={videoPreviewRef}
-                className="w-full rounded-xl mb-3"
-                style={{ maxHeight: 200, backgroundColor: "#000" }}
-                autoPlay
-                muted
-                playsInline
-              />
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span
@@ -517,6 +527,18 @@ export function MultimodalInputWidget({
                   &ldquo;{liveTranscript}&rdquo;
                 </p>
               )}
+              <button
+                type="button"
+                onClick={() => startRecording(true)}
+                className="mt-3 px-4 py-2 rounded-xl text-xs font-semibold"
+                style={{
+                  backgroundColor: "rgba(200,162,74,0.15)",
+                  color: gold,
+                  border: "1px solid rgba(200,162,74,0.3)",
+                }}
+              >
+                Re-record
+              </button>
             </div>
           ) : (
             <div className="text-center py-4">
@@ -530,7 +552,7 @@ export function MultimodalInputWidget({
                 }}
                 data-ocid="assessment.video.button"
               >
-                🎥
+                \uD83C\uDFA5
               </button>
               <p className="text-white/50 text-sm">
                 Press to start video recording

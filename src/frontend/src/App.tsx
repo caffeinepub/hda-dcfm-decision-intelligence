@@ -5,6 +5,7 @@ import { AdminDashboardPage } from "./pages/AdminDashboardPage";
 import { AssessmentPage } from "./pages/AssessmentPage";
 import { DimensionsPage } from "./pages/DimensionsPage";
 import { HowItWorksPage } from "./pages/HowItWorksPage";
+import { InvestorShowcasePage } from "./pages/InvestorShowcasePage";
 import { LandingPage } from "./pages/LandingPage";
 import { LearnMorePage } from "./pages/LearnMorePage";
 import { MyDecisionTwinPage } from "./pages/MyDecisionTwinPage";
@@ -24,7 +25,8 @@ type Page =
   | "howitworks"
   | "myDecisionTwin"
   | "userDashboard"
-  | "adminDashboard";
+  | "adminDashboard"
+  | "showcase";
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
@@ -68,6 +70,9 @@ function AppContent() {
       )}
       {currentPage === "adminDashboard" && (
         <AdminDashboardPage onNavigate={handleNavigate} />
+      )}
+      {currentPage === "showcase" && (
+        <InvestorShowcasePage onNavigate={handleNavigate} />
       )}
     </div>
   );

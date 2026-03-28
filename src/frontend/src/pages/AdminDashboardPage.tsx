@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useActor } from "../hooks/useActor";
 
 interface Props {
@@ -19,6 +20,19 @@ type PlatformStats = {
   totalAssessments: number;
   totalTwins: number;
   totalDecisionLogs: number;
+  totalJournalEntries: number;
+};
+
+type JournalEntry = {
+  id: string;
+  userId: string;
+  title: string;
+  entryType: string;
+  transcript: string;
+  aiAnalysis: string;
+  dimensionSignals: string;
+  timestamp: bigint;
+  blobUrl: string;
 };
 
 type ActivitySummary = {
@@ -32,7 +46,16 @@ type ActivitySummary = {
   }[];
   twinVersions: { id: string; versionName: string; createdAt: bigint }[];
   decisionLogs: { id: string; scenario: string; timestamp: bigint }[];
+  journalEntries: JournalEntry[];
 };
+
+const GOLD = "#C8A24A";
+
+function entryTypeIcon(t: string) {
+  if (t === "video") return "🎥";
+  if (t === "audio") return "🎤";
+  return "📝";
+}
 
 export function AdminDashboardPage({ onNavigate }: Props) {
   const { actor } = useActor();
@@ -43,6 +66,20 @@ export function AdminDashboardPage({ onNavigate }: Props) {
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [activity, setActivity] = useState<ActivitySummary | null>(null);
   const [activityLoading, setActivityLoading] = useState(false);
+  const [superAdminEmail, setSuperAdminEmail] = useState("");
+  const [seeded, setSeeded] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [confirmSeed, setConfirmSeed] = useState(false);
+
+  const refreshData = async () => {
+    if (!actor) return;
+    const [s, u] = await Promise.all([
+      actor.getPlatformStats().catch(() => null),
+      actor.getAllUserProfiles().catch(() => []),
+    ]);
+    setStats(s as PlatformStats | null);
+    setUsers(u as UserProfile[]);
+  };
 
   useEffect(() => {
     if (!actor) return;
@@ -55,10 +92,14 @@ export function AdminDashboardPage({ onNavigate }: Props) {
           return;
         }
         setAuthorized(true);
-        const [s, u] = await Promise.all([
+        const [profileOpt, s, u] = await Promise.all([
+          actor.getUserProfile().catch(() => null),
           actor.getPlatformStats().catch(() => null),
           actor.getAllUserProfiles().catch(() => []),
         ]);
+        if (profileOpt && (profileOpt as any).__kind__ === "Some") {
+          setSuperAdminEmail((profileOpt as any).value?.email || "");
+        }
         setStats(s as PlatformStats | null);
         setUsers(u as UserProfile[]);
         setLoading(false);
@@ -67,6 +108,26 @@ export function AdminDashboardPage({ onNavigate }: Props) {
         setLoading(false);
       });
   }, [actor]);
+
+  const handleSeedData = async () => {
+    if (!actor) return;
+    setSeeding(true);
+    try {
+      const result = await (actor as any).seedDemoData();
+      if (result === "already_seeded") {
+        toast.info("Profiles already generated");
+      } else {
+        toast.success("35 profiles generated successfully");
+        setSeeded(true);
+        await refreshData();
+      }
+    } catch (_err) {
+      toast.error("Could not generate profiles");
+    } finally {
+      setSeeding(false);
+      setConfirmSeed(false);
+    }
+  };
 
   const loadActivity = async (userId: string) => {
     if (!actor) return;
@@ -122,7 +183,7 @@ export function AdminDashboardPage({ onNavigate }: Props) {
             type="button"
             onClick={() => onNavigate("landing")}
             className="px-6 py-3 rounded-xl font-bold text-sm"
-            style={{ backgroundColor: "#C8A24A", color: "#1B4332" }}
+            style={{ backgroundColor: GOLD, color: "#1B4332" }}
           >
             Go Home
           </button>
@@ -135,6 +196,56 @@ export function AdminDashboardPage({ onNavigate }: Props) {
       className="min-h-screen"
       style={{ backgroundColor: "#0A1F14", color: "white" }}
     >
+      {/* Confirm seed dialog */}
+      {confirmSeed && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+          data-ocid="admin.dialog"
+        >
+          <div
+            className="rounded-2xl p-8 max-w-md w-full"
+            style={{
+              backgroundColor: "#1B4332",
+              border: "1px solid rgba(200,162,74,0.3)",
+            }}
+          >
+            <div className="text-2xl mb-3">⚡</div>
+            <h3 className="font-bold text-white text-lg mb-3">
+              Generate Platform Profiles
+            </h3>
+            <p className="text-white/60 text-sm mb-6">
+              This will generate 35 diverse profiles to showcase the
+              platform&apos;s capabilities. Continue?
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleSeedData}
+                disabled={seeding}
+                className="flex-1 py-3 rounded-xl font-bold text-sm"
+                style={{ backgroundColor: GOLD, color: "#1B4332" }}
+                data-ocid="admin.confirm_button"
+              >
+                {seeding ? "Generating..." : "Generate 35 Profiles"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmSeed(false)}
+                className="flex-1 py-3 rounded-xl font-bold text-sm"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.08)",
+                  color: "white",
+                }}
+                data-ocid="admin.cancel_button"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div
         style={{
           backgroundColor: "#1B4332",
@@ -147,41 +258,101 @@ export function AdminDashboardPage({ onNavigate }: Props) {
               type="button"
               onClick={() => onNavigate("userDashboard")}
               className="text-white/50 hover:text-white text-sm"
+              data-ocid="admin.link"
             >
               ← Dashboard
             </button>
-            <h1 className="text-white font-bold">Admin Panel</h1>
+            <h1 className="text-white font-bold">Admin Dashboard</h1>
+            {superAdminEmail === "sathishsampath@gmail.com" && (
+              <span
+                className="text-xs px-3 py-1 rounded-full font-bold"
+                style={{
+                  background: `linear-gradient(135deg, ${GOLD}, #a07830)`,
+                  color: "#1B4332",
+                }}
+              >
+                ⭐ Super Admin
+              </span>
+            )}
           </div>
-          <span
-            className="text-xs px-3 py-1 rounded-full"
-            style={{
-              backgroundColor: "rgba(200,162,74,0.15)",
-              color: "#C8A24A",
-              border: "1px solid rgba(200,162,74,0.3)",
-            }}
-          >
-            elidi Admin
-          </span>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => onNavigate("showcase")}
+              className="px-4 py-2 rounded-xl font-semibold text-sm transition-all hover:opacity-80"
+              style={{
+                backgroundColor: "rgba(200,162,74,0.15)",
+                color: GOLD,
+                border: "1px solid rgba(200,162,74,0.3)",
+              }}
+              data-ocid="admin.secondary_button"
+            >
+              View Investor Showcase →
+            </button>
+            {!seeded && (
+              <button
+                type="button"
+                onClick={() => setConfirmSeed(true)}
+                className="px-4 py-2 rounded-xl font-bold text-sm"
+                style={{ backgroundColor: GOLD, color: "#1B4332" }}
+                data-ocid="admin.primary_button"
+              >
+                Generate Profiles
+              </button>
+            )}
+            <span
+              className="text-xs px-3 py-1 rounded-full"
+              style={{
+                backgroundColor: "rgba(200,162,74,0.15)",
+                color: GOLD,
+                border: "1px solid rgba(200,162,74,0.3)",
+              }}
+            >
+              elidi Admin
+            </span>
+          </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {stats && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             {[
-              { label: "Total Users", value: stats.totalUsers },
-              { label: "Assessments Taken", value: stats.totalAssessments },
-              { label: "Twin Versions", value: stats.totalTwins },
-              { label: "Decision Logs", value: stats.totalDecisionLogs },
+              {
+                label: "Total Users",
+                value: stats.totalUsers,
+                icon: "👥",
+              },
+              {
+                label: "Assessments Taken",
+                value: stats.totalAssessments,
+                icon: "🧠",
+              },
+              {
+                label: "Twin Versions",
+                value: stats.totalTwins,
+                icon: "🧩",
+              },
+              {
+                label: "Decision Logs",
+                value: stats.totalDecisionLogs,
+                icon: "📋",
+              },
+              {
+                label: "Journal Entries",
+                value: stats.totalJournalEntries,
+                icon: "📓",
+              },
             ].map((s) => (
               <GreenCard key={s.label} className="text-center">
+                <div className="text-2xl mb-1">{s.icon}</div>
                 <div
                   className="text-3xl font-bold mb-1"
-                  style={{ color: "#C8A24A" }}
+                  style={{ color: GOLD }}
                 >
                   {Number(s.value)}
                 </div>
-                <div className="text-white/50 text-sm">{s.label}</div>
+                <div className="text-white/50 text-xs">{s.label}</div>
               </GreenCard>
             ))}
           </div>
@@ -200,7 +371,7 @@ export function AdminDashboardPage({ onNavigate }: Props) {
               </GreenCard>
             ) : (
               <div className="space-y-2">
-                {users.map((u) => (
+                {users.map((u, idx) => (
                   <button
                     key={u.principalId}
                     type="button"
@@ -218,7 +389,7 @@ export function AdminDashboardPage({ onNavigate }: Props) {
                     }}
                   >
                     <div className="font-semibold text-sm">
-                      {u.name || "Unnamed User"}
+                      {u.name || `Member #${String(idx + 1).padStart(3, "0")}`}
                     </div>
                     <div className="text-white/40 text-xs mt-0.5">
                       {u.country}
@@ -254,19 +425,21 @@ export function AdminDashboardPage({ onNavigate }: Props) {
                   <h3 className="font-bold mb-3">Profile</h3>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     {[
-                      { label: "Name", value: activity.profile.name || "—" },
+                      {
+                        label: "Name",
+                        value: activity.profile.name || "—",
+                      },
                       { label: "Country", value: activity.profile.country },
                       { label: "Phone", value: activity.profile.phone },
-                      { label: "Email", value: activity.profile.email || "—" },
+                      {
+                        label: "Email",
+                        value: activity.profile.email || "—",
+                      },
                       {
                         label: "Joined",
                         value: new Date(
                           Number(activity.profile.createdAt) / 1_000_000,
                         ).toLocaleDateString(),
-                      },
-                      {
-                        label: "Principal",
-                        value: `${activity.profile.principalId.slice(0, 12)}...`,
                       },
                     ].map((item) => (
                       <div key={item.label}>
@@ -278,6 +451,7 @@ export function AdminDashboardPage({ onNavigate }: Props) {
                     ))}
                   </div>
                 </GreenCard>
+
                 <GreenCard>
                   <h3 className="font-bold mb-3">
                     Assessments ({activity.assessments.length})
@@ -296,10 +470,7 @@ export function AdminDashboardPage({ onNavigate }: Props) {
                         >
                           <span className="text-white/70">{a.archetype}</span>
                           <div className="flex items-center gap-3">
-                            <span
-                              className="text-xs"
-                              style={{ color: "#C8A24A" }}
-                            >
+                            <span className="text-xs" style={{ color: GOLD }}>
                               {a.decisionForceLevel}
                             </span>
                             <span className="text-white/30 text-xs">
@@ -313,6 +484,7 @@ export function AdminDashboardPage({ onNavigate }: Props) {
                     </div>
                   )}
                 </GreenCard>
+
                 <GreenCard>
                   <h3 className="font-bold mb-3">
                     Twin Versions ({activity.twinVersions.length})
@@ -329,7 +501,7 @@ export function AdminDashboardPage({ onNavigate }: Props) {
                           className="px-3 py-1 rounded-full text-xs"
                           style={{
                             backgroundColor: "rgba(200,162,74,0.1)",
-                            color: "#C8A24A",
+                            color: GOLD,
                             border: "1px solid rgba(200,162,74,0.25)",
                           }}
                         >
@@ -339,6 +511,7 @@ export function AdminDashboardPage({ onNavigate }: Props) {
                     </div>
                   )}
                 </GreenCard>
+
                 <GreenCard>
                   <h3 className="font-bold mb-3">
                     Decision Logs ({activity.decisionLogs.length})
@@ -363,6 +536,68 @@ export function AdminDashboardPage({ onNavigate }: Props) {
                           <p className="text-white/30 text-xs">
                             {new Date(
                               Number(log.timestamp) / 1_000_000,
+                            ).toLocaleDateString()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </GreenCard>
+
+                <GreenCard>
+                  <h3 className="font-bold mb-3">
+                    Journal Entries ({(activity.journalEntries || []).length})
+                  </h3>
+                  {!activity.journalEntries ||
+                  activity.journalEntries.length === 0 ? (
+                    <p className="text-white/30 text-sm">
+                      No journal entries yet.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {activity.journalEntries.slice(0, 5).map((entry) => (
+                        <div
+                          key={entry.id}
+                          className="text-sm py-2"
+                          style={{
+                            borderBottom: "1px solid rgba(255,255,255,0.06)",
+                          }}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <span>{entryTypeIcon(entry.entryType)}</span>
+                            <span
+                              className="text-xs px-2 py-0.5 rounded-full"
+                              style={{
+                                backgroundColor:
+                                  entry.entryType === "video"
+                                    ? "rgba(200,162,74,0.15)"
+                                    : entry.entryType === "audio"
+                                      ? "rgba(147,51,234,0.2)"
+                                      : "rgba(59,130,246,0.2)",
+                                color:
+                                  entry.entryType === "video"
+                                    ? GOLD
+                                    : entry.entryType === "audio"
+                                      ? "#c084fc"
+                                      : "#93c5fd",
+                              }}
+                            >
+                              {entry.entryType}
+                            </span>
+                            <span className="text-white/70 font-medium">
+                              {entry.title}
+                            </span>
+                          </div>
+                          {entry.transcript && (
+                            <p className="text-white/40 text-xs italic">
+                              &ldquo;{entry.transcript.slice(0, 100)}
+                              {entry.transcript.length > 100 ? "..." : ""}
+                              &rdquo;
+                            </p>
+                          )}
+                          <p className="text-white/25 text-xs mt-1">
+                            {new Date(
+                              Number(entry.timestamp) / 1_000_000,
                             ).toLocaleDateString()}
                           </p>
                         </div>

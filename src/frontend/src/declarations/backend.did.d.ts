@@ -34,9 +34,10 @@ export interface UserActivitySummary {
   assessments: RegisteredAssessment[];
   twinVersions: TwinVersion[];
   decisionLogs: DecisionLog[];
+  journalEntries: JournalEntry[];
 }
 export interface PlatformStats {
-  totalUsers: number; totalAssessments: number; totalTwins: number; totalDecisionLogs: number;
+  totalUsers: number; totalAssessments: number; totalTwins: number; totalDecisionLogs: number; totalJournalEntries: number;
 }
 
 export interface AssessmentResult {
@@ -44,6 +45,10 @@ export interface AssessmentResult {
   archetype: string; decisionForceLevel: string; timestamp: bigint;
 }
 
+export interface JournalEntry {
+  id: string; userId: string; title: string; entryType: string;
+  blobUrl: string; transcript: string; aiAnalysis: string; dimensionSignals: string; timestamp: bigint;
+}
 export interface _SERVICE {
   '_initializeAccessControlWithSecret': ActorMethod<[string], undefined>;
   'assignCallerUserRole': ActorMethod<[Principal, UserRole], undefined>;
@@ -71,6 +76,7 @@ export interface _SERVICE {
   'getAllUserProfiles': ActorMethod<[], UserProfile[]>;
   'getUserActivitySummary': ActorMethod<[string], UserActivitySummary>;
   'getPlatformStats': ActorMethod<[], PlatformStats>;
+  'seedDemoData': ActorMethod<[], string>;
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];
