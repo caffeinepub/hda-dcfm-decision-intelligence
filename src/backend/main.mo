@@ -165,8 +165,9 @@ actor {
     };
     userProfiles.add(uid, { principalId = uid; name; country; phone; email; createdAt });
     // Super admin bootstrap: use email match OR first-ever profile (no admin exists yet)
-    if (email == "sathishsampath@gmail.com" or not AccessControl.hasAnyAdmin(accessControlState)) {
-      AccessControl.bootstrapAdmin(accessControlState, caller);
+    if (email == "sathishsampath@gmail.com" or not accessControlState.adminAssigned) {
+      accessControlState.userRoles.add(caller, #admin);
+      accessControlState.adminAssigned := true;
     };
   };
 

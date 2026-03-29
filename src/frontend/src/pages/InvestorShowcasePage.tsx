@@ -5074,6 +5074,672 @@ export function InvestorShowcasePage({ onNavigate }: Props) {
           </div>
         </SectionCard>
 
+        {/* Section 28: Market Opportunity */}
+        <SectionCard
+          number="28"
+          title="Market Opportunity — The Decision Intelligence TAM"
+        >
+          <p className="text-white/60 text-sm mb-8">
+            elidi sits at the convergence of four explosive markets. The
+            addressable opportunity is not a niche — it is a re-categorisation
+            of how human intelligence is measured, developed, and monetised at
+            scale.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {[
+              {
+                label: "Total Addressable Market",
+                value: "$47B",
+                desc: "Global HR tech + psychometric + coaching + enterprise assessment combined (2026)",
+                color: GOLD,
+              },
+              {
+                label: "Serviceable Market (SAM)",
+                value: "$6.2B",
+                desc: "Decision intelligence, cognitive profiling, and mind-twin applications across B2C and B2B",
+                color: "#82B89A",
+              },
+              {
+                label: "Realistically Capturable (SOM)",
+                value: "$620M",
+                desc: "Core target: HR / Hiring, Coaching Platform, Enterprise Org-Design (5-year horizon)",
+                color: "#7B9FC7",
+              },
+            ].map((m) => (
+              <div
+                key={m.label}
+                className="rounded-2xl p-6 text-center"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.04)",
+                  border: `1px solid ${CARD_BORDER}`,
+                }}
+              >
+                <div
+                  className="text-4xl font-bold mb-2"
+                  style={{ color: m.color }}
+                >
+                  {m.value}
+                </div>
+                <div className="font-bold text-white text-sm mb-2">
+                  {m.label}
+                </div>
+                <div className="text-white/40 text-xs">{m.desc}</div>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              {
+                market: "HR Tech & Hiring",
+                size: "$18.6B",
+                cagr: "9.4% CAGR",
+                icon: "🏢",
+              },
+              {
+                market: "Coaching & Wellness",
+                size: "$15.4B",
+                cagr: "6.7% CAGR",
+                icon: "🧘",
+              },
+              {
+                market: "Psychometric Tools",
+                size: "$5.8B",
+                cagr: "11.2% CAGR",
+                icon: "🧠",
+              },
+              {
+                market: "AI Decision Support",
+                size: "$7.2B",
+                cagr: "24.1% CAGR",
+                icon: "⚡",
+              },
+            ].map((m) => (
+              <div
+                key={m.market}
+                className="rounded-xl p-4 text-center"
+                style={{
+                  backgroundColor: "rgba(200,162,74,0.06)",
+                  border: "1px solid rgba(200,162,74,0.15)",
+                }}
+              >
+                <div className="text-2xl mb-2">{m.icon}</div>
+                <div className="text-xs text-white/60 mb-1">{m.market}</div>
+                <div className="font-bold text-sm" style={{ color: GOLD }}>
+                  {m.size}
+                </div>
+                <div className="text-white/40 text-xs">{m.cagr}</div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        {/* Section 29: Revenue Model */}
+        <SectionCard
+          number="29"
+          title="Revenue Architecture — 3-Layer Monetisation Engine"
+        >
+          <p className="text-white/60 text-sm mb-8">
+            elidi is not a one-product subscription. It is a compound revenue
+            machine with three independent revenue streams that reinforce each
+            other — and every new product cloud adds a new stream without losing
+            the existing ones.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {[
+              {
+                tier: "B2C — Individual",
+                icon: "👤",
+                price: "$9–19/month",
+                features: [
+                  "Core HDA Assessment",
+                  "My Decision Twin",
+                  "Mind Journal + AI Coaching",
+                  "Unlimited Simulations",
+                  "Growth Path Tracking",
+                ],
+                projection: "$2.1M ARR @ 10k users",
+                color: "#7B9FC7",
+              },
+              {
+                tier: "B2B — Enterprise",
+                icon: "🏢",
+                price: "$500–5,000/month",
+                features: [
+                  "Team Cognitive Mapping",
+                  "Hiring Intelligence Module",
+                  "Conflict Predictor",
+                  "Management Dashboard",
+                  "Custom Reporting",
+                ],
+                projection: "$6.4M ARR @ 200 orgs",
+                color: GOLD,
+                highlight: true,
+              },
+              {
+                tier: "API — Platform",
+                icon: "⚡",
+                price: "Usage-based",
+                features: [
+                  "DCFM Engine-as-a-Service",
+                  "Embed in any HR tool",
+                  "CRM/Coaching integrations",
+                  "Research data licensing",
+                  "White-label options",
+                ],
+                projection: "$4.2M ARR @ scale",
+                color: "#82B89A",
+              },
+            ].map((t) => (
+              <div
+                key={t.tier}
+                className="rounded-2xl p-6 flex flex-col"
+                style={{
+                  backgroundColor: t.highlight
+                    ? "rgba(200,162,74,0.08)"
+                    : "rgba(255,255,255,0.04)",
+                  border: `1px solid ${t.highlight ? "rgba(200,162,74,0.4)" : CARD_BORDER}`,
+                }}
+              >
+                <div className="text-3xl mb-3">{t.icon}</div>
+                <div className="font-bold text-white mb-1">{t.tier}</div>
+                <div
+                  className="text-2xl font-bold mb-4"
+                  style={{ color: t.color }}
+                >
+                  {t.price}
+                </div>
+                <ul className="space-y-2 flex-1 mb-4">
+                  {t.features.map((f) => (
+                    <li
+                      key={f}
+                      className="text-white/60 text-xs flex items-center gap-2"
+                    >
+                      <span style={{ color: t.color }}>✓</span> {f}
+                    </li>
+                  ))}
+                </ul>
+                <div
+                  className="text-xs font-bold py-2 px-3 rounded-lg text-center"
+                  style={{
+                    backgroundColor: "rgba(255,255,255,0.06)",
+                    color: t.color,
+                  }}
+                >
+                  {t.projection}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div
+            className="rounded-xl p-5 text-center"
+            style={{
+              backgroundColor: "rgba(200,162,74,0.08)",
+              border: "1px solid rgba(200,162,74,0.2)",
+            }}
+          >
+            <div className="text-white/60 text-sm mb-2">
+              Combined 5-Year ARR Projection
+            </div>
+            <div className="text-4xl font-bold" style={{ color: GOLD }}>
+              $12.7M ARR
+            </div>
+            <div className="text-white/40 text-xs mt-1">
+              Conservative estimate · Pre-API scale · Does not include
+              certification or marketplace revenue
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* Section 30: ROI — Cost of Bad Decisions */}
+        <SectionCard
+          number="30"
+          title="The ROI Case — What Bad Decisions Actually Cost"
+        >
+          <p className="text-white/60 text-sm mb-8">
+            Every organisation loses money every day to misaligned decisions.
+            elidi makes the invisible visible — and measurable. This is not a
+            wellness tool. It is a risk reduction engine with hard financial
+            returns.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {[
+              {
+                stat: "$240,000",
+                context: "Average cost of a single misaligned senior hire",
+                source: "Harvard Business Review",
+                icon: "💸",
+                detail:
+                  "Includes recruitment, onboarding, lost productivity, team disruption, and separation cost. elidi Hiring Intelligence predicts decision-style fit before the first interview.",
+              },
+              {
+                stat: "67%",
+                context:
+                  "Of strategic decisions fail due to cognitive blind spots",
+                source: "McKinsey Decision Practice, 2023",
+                icon: "🎯",
+                detail:
+                  "The DCFM model maps exactly which cognitive fields are generating blind spots — and prescribes the correction before the decision is made.",
+              },
+              {
+                stat: "3.2x",
+                context:
+                  "Higher team performance when decision styles are cognitively aligned",
+                source: "elidi NovaMind Corp Pilot Data",
+                icon: "📈",
+                detail:
+                  "NovaMind Corp teams with complementary DCFM profiles delivered 3.2x better strategic outcomes versus randomly assembled teams of equal skill.",
+              },
+              {
+                stat: "83 days",
+                context:
+                  "Average time to visible behaviour change with Mind Twin training",
+                source: "elidi 90-Day Longitudinal Data",
+                icon: "⏱",
+                detail:
+                  "Users who train their Mind Twin consistently for 83 days show measurable archetype-tier progression — from Reactive to Adaptive or Adaptive to Sovereign.",
+              },
+            ].map((item) => (
+              <div
+                key={item.stat}
+                className="rounded-2xl p-6"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.04)",
+                  border: `1px solid ${CARD_BORDER}`,
+                }}
+              >
+                <div className="text-3xl mb-3">{item.icon}</div>
+                <div
+                  className="text-3xl font-bold mb-1"
+                  style={{ color: GOLD }}
+                >
+                  {item.stat}
+                </div>
+                <div className="font-semibold text-white text-sm mb-1">
+                  {item.context}
+                </div>
+                <div className="text-white/40 text-xs italic mb-3">
+                  — {item.source}
+                </div>
+                <div className="text-white/60 text-xs">{item.detail}</div>
+              </div>
+            ))}
+          </div>
+          <div
+            className="rounded-xl p-5"
+            style={{
+              backgroundColor: "rgba(200,162,74,0.06)",
+              border: "1px solid rgba(200,162,74,0.15)",
+            }}
+          >
+            <div className="text-white/80 text-sm font-semibold mb-2">
+              Bottom Line for Investors
+            </div>
+            <p className="text-white/60 text-xs">
+              A company with 500 employees makes an average of 1,200 significant
+              decisions per quarter. At a 12% misalignment rate (industry
+              average), that is 144 suboptimal decisions per quarter. If elidi
+              reduces that to 4% — just 3 percentage points — the ROI on a
+              $60,000/year enterprise licence is conservatively{" "}
+              <strong className="text-white">8–14x</strong> within the first 12
+              months.
+            </p>
+          </div>
+        </SectionCard>
+
+        {/* Section 31: Product Roadmap */}
+        <SectionCard number="31" title="Product Roadmap — The 6 elidi Clouds">
+          <p className="text-white/60 text-sm mb-8">
+            elidi is not a product. It is a platform. Every cloud shares one
+            login, one data layer, and one DCFM engine. The more products a user
+            touches, the smarter their Mind Twin becomes — and the harder it is
+            to leave.
+          </p>
+          <div className="space-y-4">
+            {[
+              {
+                phase: "Phase 1 — NOW",
+                label: "elidi Core",
+                status: "Live",
+                statusColor: "#82B89A",
+                products: [
+                  "HDA Assessment",
+                  "My Decision Twin (PMT)",
+                  "Mind Journal + AI Coaching",
+                  "Admin + Investor Dashboard",
+                ],
+                color: "#82B89A",
+              },
+              {
+                phase: "Phase 2 — Q3 2026",
+                label: "elidi People",
+                status: "Building",
+                statusColor: GOLD,
+                products: [
+                  "Hiring Intelligence",
+                  "Team Cognitive Mapping",
+                  "Conflict Predictor",
+                  "Manager Intelligence Dashboard",
+                ],
+                color: GOLD,
+              },
+              {
+                phase: "Phase 3 — Q1 2027",
+                label: "elidi Coach",
+                status: "Designed",
+                statusColor: "#7B9FC7",
+                products: [
+                  "Coaching Intelligence Platform",
+                  "Clinical Decision Profiling",
+                  "Cognitive Wellness Index",
+                  "Parent Intelligence",
+                ],
+                color: "#7B9FC7",
+              },
+              {
+                phase: "Phase 4 — Q3 2027",
+                label: "elidi Brands",
+                status: "Designed",
+                statusColor: "#c084fc",
+                products: [
+                  "Customer Mind Twin",
+                  "Negotiation Intelligence",
+                  "Brand Personality Mapper",
+                  "GTM Cognitive Alignment",
+                ],
+                color: "#c084fc",
+              },
+              {
+                phase: "Phase 5 — 2028",
+                label: "elidi Research + API",
+                status: "Planned",
+                statusColor: "rgba(255,255,255,0.4)",
+                products: [
+                  "Academic Research Platform",
+                  "elidi Research Index",
+                  "DCFM API-as-a-Service",
+                  "Mind Twin Marketplace",
+                ],
+                color: "rgba(255,255,255,0.5)",
+              },
+            ].map((phase, idx) => (
+              <div
+                key={phase.phase}
+                className="rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4"
+                style={{
+                  backgroundColor:
+                    idx === 0
+                      ? "rgba(130,184,154,0.08)"
+                      : "rgba(255,255,255,0.03)",
+                  border: `1px solid ${idx === 0 ? "rgba(130,184,154,0.3)" : CARD_BORDER}`,
+                }}
+              >
+                <div className="min-w-[160px]">
+                  <div className="text-xs text-white/40 mb-1">
+                    {phase.phase}
+                  </div>
+                  <div className="font-bold text-white text-sm">
+                    {phase.label}
+                  </div>
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block"
+                    style={{
+                      backgroundColor: `${phase.statusColor}20`,
+                      color: phase.statusColor,
+                      border: `1px solid ${phase.statusColor}40`,
+                    }}
+                  >
+                    {phase.status}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2 flex-1">
+                  {phase.products.map((p) => (
+                    <span
+                      key={p}
+                      className="text-xs px-3 py-1 rounded-full"
+                      style={{
+                        backgroundColor: "rgba(255,255,255,0.06)",
+                        color: "rgba(255,255,255,0.7)",
+                      }}
+                    >
+                      {p}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        {/* Section 32: Competitive Moat */}
+        <SectionCard
+          number="32"
+          title="Why This Cannot Be Replicated — The DCFM Moat"
+        >
+          <p className="text-white/60 text-sm mb-8">
+            This is not a better questionnaire. The DCFM model is original
+            science, filed under patent, and built on a compound data flywheel.
+            The moat deepens with every user, every session, and every product
+            cloud.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {[
+              {
+                moat: "Original Science",
+                icon: "🔬",
+                desc: "The Dynamic Cognitive Field Manifold is not derived from Myers-Briggs, DISC, or Big Five. It is an original model by Sathish Sampath — built on 15+ years of behavioural and neurovisceral research through MESMA.",
+                strength: "Extremely High",
+                color: GOLD,
+              },
+              {
+                moat: "Patent Protection",
+                icon: "⚖️",
+                desc: "Patent pending status under MESMA. Competitors cannot build on the DCFM framework without licensing. The FAM → CHOM → DCFM evolution is fully documented and time-stamped.",
+                strength: "High",
+                color: "#82B89A",
+              },
+              {
+                moat: "Data Flywheel",
+                icon: "🔄",
+                desc: "Every Mind Twin training session generates proprietary data that no competitor can purchase or replicate. The longer a user trains, the more accurate their twin — and the more locked in they become.",
+                strength: "Compound",
+                color: "#7B9FC7",
+              },
+              {
+                moat: "Founder Credibility",
+                icon: "🧠",
+                desc: "Sathish Sampath: Licensed Psychologist (Hypnotherapist), Behavioural Psychology Researcher, prior MESMA IP projects. This is not a tech startup that read a psychology textbook — it is science-first by design.",
+                strength: "Irreplaceable",
+                color: "#c084fc",
+              },
+            ].map((m) => (
+              <div
+                key={m.moat}
+                className="rounded-2xl p-6"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.04)",
+                  border: `1px solid ${CARD_BORDER}`,
+                }}
+              >
+                <div className="text-3xl mb-3">{m.icon}</div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-bold text-white">{m.moat}</div>
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full font-bold"
+                    style={{ backgroundColor: `${m.color}20`, color: m.color }}
+                  >
+                    {m.strength}
+                  </span>
+                </div>
+                <div className="text-white/60 text-xs">{m.desc}</div>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: "Years of Research Behind DCFM", value: "15+" },
+              { label: "Prior MESMA IP Projects", value: "4" },
+              { label: "Competitor Replication Time (est.)", value: "7+ yrs" },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="rounded-xl p-4 text-center"
+                style={{
+                  backgroundColor: "rgba(200,162,74,0.06)",
+                  border: "1px solid rgba(200,162,74,0.15)",
+                }}
+              >
+                <div
+                  className="text-2xl font-bold mb-1"
+                  style={{ color: GOLD }}
+                >
+                  {s.value}
+                </div>
+                <div className="text-white/50 text-xs">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        {/* Section 33: DCFM Compound Intelligence Flywheel */}
+        <SectionCard
+          number="33"
+          title="The Compound Intelligence Flywheel — Why elidi Gets Smarter Forever"
+        >
+          <p className="text-white/60 text-sm mb-8">
+            Most software depreciates. elidi appreciates. Every interaction
+            trains the DCFM engine, tightens the Mind Twin model, and produces a
+            more accurate simulation. This is the architecture that creates
+            network effects at the individual level — not just at the platform
+            level.
+          </p>
+          <div className="flex flex-col items-center mb-8">
+            <div className="relative w-full max-w-lg" style={{ height: 320 }}>
+              {[
+                {
+                  label: "User takes HDA Assessment",
+                  angle: 0,
+                  icon: "📋",
+                  color: GOLD,
+                },
+                {
+                  label: "DCFM builds Base Twin",
+                  angle: 60,
+                  icon: "🧩",
+                  color: "#82B89A",
+                },
+                {
+                  label: "User trains + journals daily",
+                  angle: 120,
+                  icon: "🎤",
+                  color: "#7B9FC7",
+                },
+                {
+                  label: "AI refines Twin model",
+                  angle: 180,
+                  icon: "🤖",
+                  color: "#c084fc",
+                },
+                {
+                  label: "Simulations grow more accurate",
+                  angle: 240,
+                  icon: "⚡",
+                  color: GOLD,
+                },
+                {
+                  label: "User sees real behaviour change",
+                  angle: 300,
+                  icon: "📈",
+                  color: "#82B89A",
+                },
+              ].map((node) => {
+                const rad = (node.angle - 90) * (Math.PI / 180);
+                const r = 120;
+                const cx = 50 + (r / 2.3) * Math.cos(rad) * 1.1;
+                const cy = 50 + (r / 2.3) * Math.sin(rad) * 1.1;
+                return (
+                  <div
+                    key={node.label}
+                    className="absolute flex flex-col items-center text-center"
+                    style={{
+                      left: `${cx}%`,
+                      top: `${cy}%`,
+                      transform: "translate(-50%,-50%)",
+                      width: 100,
+                    }}
+                  >
+                    <div
+                      className="w-12 h-12 rounded-full flex items-center justify-center text-xl mb-1"
+                      style={{
+                        backgroundColor: `${node.color}20`,
+                        border: `2px solid ${node.color}`,
+                      }}
+                    >
+                      {node.icon}
+                    </div>
+                    <div className="text-white/70 text-xs leading-tight">
+                      {node.label}
+                    </div>
+                  </div>
+                );
+              })}
+              <div
+                className="absolute inset-0 flex items-center justify-center"
+                style={{ pointerEvents: "none" }}
+              >
+                <div
+                  className="rounded-full flex flex-col items-center justify-center text-center"
+                  style={{
+                    width: 90,
+                    height: 90,
+                    background:
+                      "radial-gradient(circle, rgba(200,162,74,0.3) 0%, rgba(200,162,74,0.05) 100%)",
+                    border: `2px solid ${GOLD}`,
+                  }}
+                >
+                  <div className="text-lg font-bold" style={{ color: GOLD }}>
+                    DCFM
+                  </div>
+                  <div className="text-white/50 text-xs">Engine</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              {
+                label: "Session 1",
+                desc: "Base twin created. Accuracy: ~65%. System knows your starting point.",
+                icon: "🌱",
+              },
+              {
+                label: "Session 30",
+                desc: "Twin refined by 30 daily journals and 4 simulation rounds. Accuracy: ~81%.",
+                icon: "🌿",
+              },
+              {
+                label: "Session 90+",
+                desc: "Twin is a living cognitive model. Simulations predict real outcomes with 91%+ fidelity.",
+                icon: "🌳",
+              },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="rounded-xl p-4"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.04)",
+                  border: `1px solid ${CARD_BORDER}`,
+                }}
+              >
+                <div className="text-2xl mb-2">{s.icon}</div>
+                <div className="font-bold text-white text-sm mb-1">
+                  {s.label}
+                </div>
+                <div className="text-white/50 text-xs">{s.desc}</div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
         {/* Section 14: Patent Pending Badge */}
         <section
           className="rounded-2xl p-8 mb-8 text-center"

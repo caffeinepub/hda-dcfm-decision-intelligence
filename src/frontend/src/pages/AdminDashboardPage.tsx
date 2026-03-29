@@ -97,8 +97,10 @@ export function AdminDashboardPage({ onNavigate }: Props) {
           actor.getPlatformStats().catch(() => null),
           actor.getAllUserProfiles().catch(() => []),
         ]);
-        if (profileOpt && (profileOpt as any).__kind__ === "Some") {
-          setSuperAdminEmail((profileOpt as any).value?.email || "");
+        if (profileOpt && Array.isArray(profileOpt) && profileOpt.length > 0) {
+          setSuperAdminEmail(
+            (profileOpt as unknown as [UserProfile])[0]?.email || "",
+          );
         }
         setStats(s as PlatformStats | null);
         setUsers(u as UserProfile[]);
@@ -276,19 +278,21 @@ export function AdminDashboardPage({ onNavigate }: Props) {
             )}
           </div>
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => onNavigate("showcase")}
-              className="px-4 py-2 rounded-xl font-semibold text-sm transition-all hover:opacity-80"
-              style={{
-                backgroundColor: "rgba(200,162,74,0.15)",
-                color: GOLD,
-                border: "1px solid rgba(200,162,74,0.3)",
-              }}
-              data-ocid="admin.secondary_button"
-            >
-              View Investor Showcase →
-            </button>
+            {superAdminEmail === "sathishsampath@gmail.com" && (
+              <button
+                type="button"
+                onClick={() => onNavigate("showcase")}
+                className="px-4 py-2 rounded-xl font-semibold text-sm transition-all hover:opacity-80"
+                style={{
+                  backgroundColor: "rgba(200,162,74,0.15)",
+                  color: GOLD,
+                  border: "1px solid rgba(200,162,74,0.3)",
+                }}
+                data-ocid="admin.secondary_button"
+              >
+                🏦 Investor Showcase →
+              </button>
+            )}
             {!seeded && (
               <button
                 type="button"

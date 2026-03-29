@@ -54,13 +54,6 @@ module {
     state.userRoles.add(user, role);
   };
 
-  // Bootstrap: force-assign admin without requiring an existing admin.
-  // Safe to call any time — if caller is already admin, it's a no-op effect.
-  public func bootstrapAdmin(state : AccessControlState, user : Principal) {
-    state.userRoles.add(user, #admin);
-    state.adminAssigned := true;
-  };
-
   public func hasPermission(state : AccessControlState, caller : Principal, requiredRole : UserRole) : Bool {
     let userRole = getUserRole(state, caller);
     if (userRole == #admin or requiredRole == #guest) { true } else {
@@ -68,16 +61,7 @@ module {
     };
   };
 
-  // Safe isAdmin: never traps, returns false for unknown principals.
   public func isAdmin(state : AccessControlState, caller : Principal) : Bool {
-    if (caller.isAnonymous()) { return false };
-    switch (state.userRoles.get(caller)) {
-      case (?(#admin)) { true };
-      case (_) { false };
-    };
-  };
-
-  public func hasAnyAdmin(state : AccessControlState) : Bool {
-    state.adminAssigned;
+    getUserRole(state, caller) == #admin;
   };
 };
