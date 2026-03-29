@@ -800,6 +800,44 @@ function DCFMOriginModal({
                 </div>
               </section>
 
+              {/* Section 3 — HDA-DCFM Framework */}
+              <section>
+                <h3
+                  className="text-xl font-bold text-white mb-5"
+                  style={{
+                    borderLeft: "3px solid #C8A24A",
+                    paddingLeft: "1rem",
+                  }}
+                >
+                  HDA-DCFM Framework — Full Cognitive Map
+                </h3>
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{ border: "1px solid rgba(200,162,74,0.3)" }}
+                >
+                  <img
+                    src="/assets/uploads/Screenshot-2026-03-21-at-3.56.03-PM-1.png"
+                    alt="HDA-DCFM Framework — full cognitive map"
+                    className="w-full object-contain"
+                    style={{ maxHeight: "500px", background: "#0D2B1E" }}
+                  />
+                  <div
+                    className="px-5 py-3 text-center text-sm"
+                    style={{
+                      background: "rgba(200,162,74,0.08)",
+                      color: "#C8A24A",
+                      borderTop: "1px solid rgba(200,162,74,0.2)",
+                    }}
+                  >
+                    <em>
+                      HDA-DCFM Framework — the complete cognitive decision map
+                      integrating all six decision dimensions into a unified
+                      manifold
+                    </em>
+                  </div>
+                </div>
+              </section>
+
               {/* Modal Footer */}
               <section>
                 <div
@@ -1733,7 +1771,7 @@ export function HowItWorksPage({ onNavigate }: HowItWorksPageProps) {
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             <div className="flex-shrink-0">
               <img
-                src="/assets/uploads/05-2-1.jpg"
+                src="/assets/uploads/SATHISH-SAMPATH11-2-1.jpg"
                 alt="Sathish Sampath"
                 className="w-28 h-28 rounded-full object-cover border-4 border-yellow-500"
                 style={{ objectPosition: "center top" }}

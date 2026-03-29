@@ -276,14 +276,6 @@ export function MultimodalInputWidget({
         )}
       </div>
 
-      {/* Video enable notice */}
-      {!videoEnabled && mode !== "video" && (
-        <p className="text-xs mb-3" style={{ color: "rgba(200,162,74,0.5)" }}>
-          \uD83D\uDCA1 Video captures more signals for richer analysis \u2014
-          optional
-        </p>
-      )}
-
       {/* Scale mode */}
       {mode === "scale" && (
         <div>
@@ -329,7 +321,7 @@ export function MultimodalInputWidget({
           <textarea
             value={textVal}
             onChange={(e) => handleTextChange(e.target.value)}
-            placeholder="Share your thoughts openly \u2014 the more honest, the better your twin learns..."
+            placeholder="Share your thoughts openly. The more honest you are, the better your twin learns..."
             className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none resize-none"
             style={{
               backgroundColor: "rgba(255,255,255,0.07)",

@@ -361,7 +361,7 @@ export function LearnMorePage({ onNavigate }: LearnMorePageProps) {
                   }}
                 >
                   <img
-                    src="/assets/uploads/05-2-1.jpg"
+                    src="/assets/uploads/SATHISH-SAMPATH11-2-1.jpg"
                     alt="Sathish Sampath"
                     className="rounded-2xl object-cover w-full max-w-xs"
                     style={{

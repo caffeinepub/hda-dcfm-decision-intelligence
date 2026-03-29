@@ -548,7 +548,7 @@ export function DimensionsPage({ onNavigate }: DimensionsPageProps) {
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             <div className="flex-shrink-0">
               <img
-                src="/assets/uploads/05-2-1.jpg"
+                src="/assets/uploads/SATHISH-SAMPATH11-2-1.jpg"
                 alt="Sathish Sampath"
                 className="w-28 h-28 rounded-full object-cover border-4 border-yellow-500"
                 style={{ objectPosition: "center top" }}

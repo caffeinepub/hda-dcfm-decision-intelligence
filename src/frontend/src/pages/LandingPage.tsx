@@ -1040,6 +1040,204 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       {/* Stats Counter Row */}
       <StatsCounterRow />
 
+      {/* ─── DCFM Science Callout ────────────────────────────── */}
+      <section
+        className="py-20"
+        style={{
+          background:
+            "linear-gradient(135deg, #061218 0%, #0a1f10 50%, #081C2F 100%)",
+          borderTop: "1px solid rgba(200,162,74,0.2)",
+          borderBottom: "1px solid rgba(200,162,74,0.2)",
+        }}
+      >
+        <div className="max-w-5xl mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="rounded-3xl p-10 md:p-14 text-center"
+            style={{
+              background: "rgba(200,162,74,0.04)",
+              border: "2px solid rgba(200,162,74,0.35)",
+              backdropFilter: "blur(12px)",
+            }}
+          >
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-6"
+              style={{
+                backgroundColor: "rgba(200,162,74,0.15)",
+                color: "#C8A24A",
+                border: "1px solid rgba(200,162,74,0.4)",
+              }}
+            >
+              🔬 Patent Pending · Original Invention
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">
+              The World&apos;s First{" "}
+              <span style={{ color: "#C8A24A" }}>
+                Cognitive Decision Intelligence
+              </span>{" "}
+              Platform
+            </h2>
+            <p className="text-white/70 text-lg md:text-xl max-w-3xl mx-auto mb-8 leading-relaxed">
+              Built on the{" "}
+              <strong style={{ color: "#C8A24A" }}>
+                Dynamic Cognitive Field Manifold (DCFM)
+              </strong>{" "}
+              — a breakthrough model by Sathish Sampath &amp; MESMA that maps
+              how the human brain actually constructs, evaluates, and executes
+              decisions. This is not a personality test. This is decision
+              science.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10 text-left">
+              {[
+                {
+                  icon: "🧬",
+                  title: "Neuroscience-Rooted",
+                  desc: "Every dimension maps to real neural pathways — prefrontal cortex, amygdala, insula, and more — for scientifically grounded results.",
+                },
+                {
+                  icon: "📐",
+                  title: "Mathematical Precision",
+                  desc: "DCFM uses a manifold-based mathematical model to represent decision state-space — far beyond simple questionnaire scoring.",
+                },
+                {
+                  icon: "🔄",
+                  title: "Adaptive & Living",
+                  desc: "Your Mind Twin evolves with every session, building a living cognitive map that grows more accurate over time.",
+                },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="rounded-2xl p-6"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(200,162,74,0.2)",
+                  }}
+                >
+                  <div className="text-3xl mb-3">{item.icon}</div>
+                  <h3 className="font-bold text-white mb-2">{item.title}</h3>
+                  <p className="text-white/55 text-sm leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ─── Why elidi vs Traditional Tools ──────────────────── */}
+      <section
+        className="py-24"
+        style={{
+          background: "linear-gradient(180deg, #061218 0%, #0a1a0a 100%)",
+        }}
+      >
+        <div className="max-w-6xl mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-14"
+          >
+            <div
+              className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase mb-5"
+              style={{
+                background: "rgba(200,162,74,0.12)",
+                color: "#C8A24A",
+                border: "1px solid rgba(200,162,74,0.3)",
+              }}
+            >
+              The elidi Difference
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              Not Another Personality Test
+            </h2>
+            <p className="text-white/55 max-w-2xl mx-auto text-lg">
+              elidi is in a completely different category from every tool that
+              came before it.
+            </p>
+          </motion.div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Traditional tools */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="rounded-2xl p-8"
+              style={{
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.1)",
+              }}
+            >
+              <div className="text-white/40 text-sm font-bold tracking-widest uppercase mb-6">
+                Traditional Tools (Myers-Briggs / DISC / Big Five)
+              </div>
+              {[
+                "Snapshot in time — static, never evolves",
+                "Categories personalities, not decisions",
+                "No neuroscience backing or mathematical model",
+                "Cannot predict decisions under pressure",
+                "Individual profiles only — no team or org intelligence",
+                "Generic archetypes that don't guide real action",
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="flex items-start gap-3 mb-4 text-white/50 text-sm"
+                >
+                  <span className="text-red-400 mt-0.5 flex-shrink-0">✗</span>
+                  {item}
+                </div>
+              ))}
+            </motion.div>
+            {/* elidi */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="rounded-2xl p-8"
+              style={{
+                background: "rgba(200,162,74,0.06)",
+                border: "2px solid rgba(200,162,74,0.4)",
+              }}
+            >
+              <div
+                style={{ color: "#C8A24A" }}
+                className="text-sm font-bold tracking-widest uppercase mb-6"
+              >
+                elidi — DCFM Decision Intelligence Platform
+              </div>
+              {[
+                "Living Mind Twin — evolves with every training session",
+                "Measures 6 decision dimensions with neuroscience precision",
+                "Mathematical manifold model (DCFM) — patent pending",
+                "Predicts decisions under pressure with scenario simulation",
+                "Team, org, clinical, and enterprise-grade analytics",
+                "Actionable cognitive coaching with personalised roadmaps",
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="flex items-start gap-3 mb-4 text-white text-sm"
+                >
+                  <span
+                    style={{ color: "#C8A24A" }}
+                    className="mt-0.5 flex-shrink-0"
+                  >
+                    ✓
+                  </span>
+                  {item}
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* How It Works */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6">
@@ -1248,6 +1446,106 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
         </div>
       </section>
 
+      {/* ─── Real-World Decision Intelligence ──────────────── */}
+      <section className="py-24" style={{ background: "#F3F6F9" }}>
+        <div className="max-w-7xl mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-16"
+          >
+            <div
+              className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase mb-5"
+              style={{
+                background: "#e8f5ee",
+                color: "#1B4332",
+                border: "1px solid rgba(27,67,50,0.2)",
+              }}
+            >
+              Real-World Impact
+            </div>
+            <h2
+              className="text-4xl md:text-5xl font-bold mb-4"
+              style={{ color: "#081C2F" }}
+            >
+              Intelligence That Changes Everything
+            </h2>
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+              From the boardroom to the therapy room, elidi turns cognitive
+              science into real-world advantage.
+            </p>
+          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[
+              {
+                icon: "🎯",
+                headline: "Hire with cognitive certainty, not gut feel",
+                body: "A high-IAI, low-SIS candidate is brilliant alone but struggles in consensus-driven teams. Know this before the first interview. elidi maps cognitive fit to role requirements with scientific precision.",
+                tag: "For HR & Talent Leaders",
+                color: "#1B4332",
+                bg: "#f0f9f4",
+              },
+              {
+                icon: "⚡",
+                headline: "Predict team conflicts before they cost you",
+                body: "Three high-EM profiles under deadline pressure — DCFM knows exactly where the friction will come from and when. Reorganise the team architecture before the project starts, not after it fails.",
+                tag: "For CEOs & Team Managers",
+                color: "#081C2F",
+                bg: "#f0f4f9",
+              },
+              {
+                icon: "🧠",
+                headline: "Train your mind like you train your body",
+                body: "The Mind Twin tracks your cognitive evolution across months. See your EDI improve by 1.4 points over 90 days of focused training. Measurable, accountable, transformational.",
+                tag: "For Individuals & Coaches",
+                color: "#4A1B4C",
+                bg: "#f5f0f9",
+              },
+              {
+                icon: "💎",
+                headline: "Map your customer's decision fingerprint",
+                body: "High-RRM buyers need different messaging than high-SIS buyers. elidi gives your sales and GTM teams a cognitive map of how your best customers think — and how to speak directly to their decision architecture.",
+                tag: "For Sales & Marketing",
+                color: "#4A2E00",
+                bg: "#fdf6e8",
+              },
+            ].map((card) => (
+              <motion.div
+                key={card.headline}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                className="rounded-2xl p-8 flex flex-col gap-4"
+                style={{
+                  background: card.bg,
+                  border: `1px solid ${card.color}18`,
+                }}
+              >
+                <div className="text-4xl">{card.icon}</div>
+                <h3
+                  className="text-xl font-bold leading-snug"
+                  style={{ color: card.color }}
+                >
+                  {card.headline}
+                </h3>
+                <p className="text-gray-600 leading-relaxed text-sm flex-1">
+                  {card.body}
+                </p>
+                <div
+                  className="self-start px-3 py-1 rounded-full text-xs font-semibold"
+                  style={{ background: `${card.color}12`, color: card.color }}
+                >
+                  {card.tag}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Brain Neural Map */}
       <BrainNeuralMap />
 
@@ -1275,18 +1573,35 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
 
           {/* Two-column: photo left, text right */}
           <div className="flex flex-col md:flex-row items-center md:items-start gap-10 md:gap-14">
-            {/* Photo */}
+            {/* Photos */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="flex-shrink-0 flex justify-center"
+              className="flex-shrink-0 flex justify-center gap-4"
             >
               <div
                 className="rounded-2xl overflow-hidden shadow-2xl"
                 style={{
-                  border: "2px solid rgba(200,162,74,0.35)",
+                  border: "2px solid rgba(200,162,74,0.5)",
+                }}
+              >
+                <img
+                  src="/assets/uploads/SATHISH-SAMPATH11-2-1.jpg"
+                  alt="Sathish Sampath"
+                  className="rounded-2xl object-cover"
+                  style={{
+                    width: "180px",
+                    height: "240px",
+                    objectPosition: "50% 10%",
+                  }}
+                />
+              </div>
+              <div
+                className="rounded-2xl overflow-hidden shadow-xl hidden sm:block"
+                style={{
+                  border: "1px solid rgba(200,162,74,0.25)",
                 }}
               >
                 <img
@@ -1294,8 +1609,8 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                   alt="Sathish Sampath"
                   className="rounded-2xl object-cover"
                   style={{
-                    width: "200px",
-                    height: "260px",
+                    width: "160px",
+                    height: "240px",
                     objectPosition: "50% 10%",
                   }}
                 />
