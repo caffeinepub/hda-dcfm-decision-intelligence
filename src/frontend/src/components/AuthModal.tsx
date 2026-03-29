@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
@@ -77,10 +77,40 @@ interface AuthModalProps {
   onSuccess: () => void;
 }
 
+type ProfileData = { name: string; email: string; country: string } | null;
+
+function extractProfile(profileOpt: unknown): ProfileData {
+  if (Array.isArray(profileOpt) && profileOpt.length > 0) {
+    const raw = profileOpt[0] as Record<string, unknown>;
+    return {
+      name: typeof raw.name === "string" ? raw.name : "",
+      email: typeof raw.email === "string" ? raw.email : "",
+      country: typeof raw.country === "string" ? raw.country : "",
+    };
+  }
+  if (
+    profileOpt &&
+    typeof profileOpt === "object" &&
+    "__kind__" in (profileOpt as object)
+  ) {
+    const opt = profileOpt as {
+      __kind__: string;
+      value?: Record<string, unknown>;
+    };
+    if (opt.__kind__ === "Some" && opt.value) {
+      return {
+        name: typeof opt.value.name === "string" ? opt.value.name : "",
+        email: typeof opt.value.email === "string" ? opt.value.email : "",
+        country: typeof opt.value.country === "string" ? opt.value.country : "",
+      };
+    }
+  }
+  return null;
+}
+
 export function AuthModal({ onClose, onSuccess }: AuthModalProps) {
-  const { identity, login, isLoggingIn } = useInternetIdentity();
+  const { identity, login, isLoggingIn, loginError } = useInternetIdentity();
   const { actor } = useActor();
-  // Steps: "choose" = pick social provider, "connect" = waiting for ICP auth, "profile" = fill form, "returning" = confirm returning user
   const [step, setStep] = useState<
     "choose" | "connect" | "profile" | "returning"
   >("choose");
@@ -92,75 +122,58 @@ export function AuthModal({ onClose, onSuccess }: AuthModalProps) {
   const [email, setEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [existingProfile, setExistingProfile] = useState<{
-    name: string;
-    email: string;
-    country: string;
-  } | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [existingProfile, setExistingProfile] = useState<ProfileData>(null);
 
   const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
 
-  // Once authenticated, check if profile exists
-  useEffect(() => {
-    if (!isAuthenticated || !actor) return;
-    actor
-      .hasCompletedProfile()
-      .then(async (done) => {
-        if (done) {
-          // Show returning user confirmation — never auto-skip
-          try {
-            const profileOpt = await actor.getUserProfile();
-            let p: { name: string; email: string; country: string } | null =
-              null;
-            if (Array.isArray(profileOpt) && profileOpt.length > 0) {
-              const raw = profileOpt[0] as Record<string, unknown>;
-              p = {
-                name: typeof raw.name === "string" ? raw.name : "",
-                email: typeof raw.email === "string" ? raw.email : "",
-                country: typeof raw.country === "string" ? raw.country : "",
-              };
-            } else if (
-              profileOpt &&
-              typeof profileOpt === "object" &&
-              "__kind__" in (profileOpt as object)
-            ) {
-              const opt = profileOpt as {
-                __kind__: string;
-                value?: Record<string, unknown>;
-              };
-              if (opt.__kind__ === "Some" && opt.value) {
-                p = {
-                  name:
-                    typeof opt.value.name === "string" ? opt.value.name : "",
-                  email:
-                    typeof opt.value.email === "string" ? opt.value.email : "",
-                  country:
-                    typeof opt.value.country === "string"
-                      ? opt.value.country
-                      : "",
-                };
-              }
-            }
-            setExistingProfile(p);
-          } catch {
-            setExistingProfile(null);
-          }
-          setStep("returning");
-        } else {
-          setStep("profile");
+  const checkProfileAndRoute = useCallback(async () => {
+    if (!actor) return;
+    setChecking(true);
+    try {
+      const done = await actor.hasCompletedProfile();
+      if (done) {
+        try {
+          const profileOpt = await actor.getUserProfile();
+          setExistingProfile(extractProfile(profileOpt));
+        } catch {
+          setExistingProfile(null);
         }
-      })
-      .catch(() => setStep("profile"));
-  }, [isAuthenticated, actor]);
+        setStep("returning");
+      } else {
+        setStep("profile");
+      }
+    } catch {
+      setStep("profile");
+    } finally {
+      setChecking(false);
+    }
+  }, [actor]);
+
+  // When login completes (identity + actor ready) while on connect step, route to profile/returning
+  useEffect(() => {
+    if (!isAuthenticated || !actor || step !== "connect") return;
+    void checkProfileAndRoute();
+  }, [isAuthenticated, actor, step, checkProfileAndRoute]);
 
   const handleProviderSelect = (provider: SocialProvider) => {
     setSelectedProvider(provider);
-    setStep("connect");
+    setError("");
+    // If already authenticated, skip ICP popup and check profile directly
+    if (isAuthenticated && actor) {
+      setStep("connect"); // show connecting indicator briefly
+      void checkProfileAndRoute();
+    } else {
+      setStep("connect");
+    }
   };
 
-  const handleConnect = async () => {
-    await login();
-    // after login identity changes, useEffect above will handle routing
+  const handleConnect = () => {
+    if (isAuthenticated && actor) {
+      void checkProfileAndRoute();
+    } else {
+      login();
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -182,7 +195,7 @@ export function AuthModal({ onClose, onSuccess }: AuthModalProps) {
     try {
       await actor.saveUserProfile(name, country, phone, email);
       onSuccess();
-    } catch (_e) {
+    } catch {
       setError("Failed to save profile. Please try again.");
     } finally {
       setSaving(false);
@@ -196,6 +209,7 @@ export function AuthModal({ onClose, onSuccess }: AuthModalProps) {
         ? "Facebook"
         : "";
   const providerColor = selectedProvider === "google" ? "#DB4437" : "#1877F2";
+  const isConnecting = isLoggingIn || checking;
 
   return (
     <div
@@ -251,9 +265,7 @@ export function AuthModal({ onClose, onSuccess }: AuthModalProps) {
             <p className="text-white/50 text-sm mb-8">
               Choose how you'd like to connect to your Decision Twin.
             </p>
-
             <div className="space-y-3">
-              {/* Google */}
               <button
                 type="button"
                 onClick={() => handleProviderSelect("google")}
@@ -285,8 +297,6 @@ export function AuthModal({ onClose, onSuccess }: AuthModalProps) {
                 </svg>
                 Continue with Google
               </button>
-
-              {/* Facebook */}
               <button
                 type="button"
                 onClick={() => handleProviderSelect("facebook")}
@@ -305,7 +315,6 @@ export function AuthModal({ onClose, onSuccess }: AuthModalProps) {
                 Continue with Facebook
               </button>
             </div>
-
             <div className="flex items-center gap-3 my-5">
               <div className="flex-1 h-px bg-white/10" />
               <span className="text-white/30 text-xs">secured by</span>
@@ -368,23 +377,36 @@ export function AuthModal({ onClose, onSuccess }: AuthModalProps) {
               Connect with {providerLabel}
             </h2>
             <p className="text-white/50 text-sm mb-8">
-              Click below to securely authenticate. You'll be asked to verify
-              your {providerLabel} account.
+              {isConnecting
+                ? "Verifying your identity..."
+                : `Click below to securely authenticate your ${providerLabel} account.`}
             </p>
+            {loginError && (
+              <div
+                className="mb-4 px-4 py-3 rounded-xl text-sm"
+                style={{
+                  backgroundColor: "rgba(239,68,68,0.12)",
+                  color: "#f87171",
+                  border: "1px solid rgba(239,68,68,0.25)",
+                }}
+              >
+                Authentication failed. Please try again.
+              </div>
+            )}
             <button
               type="button"
               onClick={handleConnect}
-              disabled={isLoggingIn}
+              disabled={isConnecting}
               className="w-full py-3.5 rounded-xl font-bold text-base transition-all hover:opacity-90 active:scale-95 disabled:opacity-60 flex items-center justify-center gap-3"
               style={{ backgroundColor: providerColor, color: "#fff" }}
             >
-              {isLoggingIn ? (
+              {isConnecting ? (
                 <>
                   <span className="animate-spin w-5 h-5 border-2 border-white/40 border-t-white rounded-full inline-block" />{" "}
                   Connecting...
                 </>
               ) : (
-                <>Connect {providerLabel} Account</>
+                `Connect ${providerLabel} Account`
               )}
             </button>
             <button
