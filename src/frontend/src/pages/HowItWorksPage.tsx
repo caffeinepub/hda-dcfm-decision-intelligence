@@ -1821,6 +1821,288 @@ export function HowItWorksPage({ onNavigate }: HowItWorksPageProps) {
         </button>
       </section>
 
+      {/* ─── Beyond Assessment: Platform Architecture ───────────── */}
+      <section
+        className="py-24"
+        style={{
+          background: "linear-gradient(135deg, #081C2F 0%, #0D2B1A 100%)",
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div
+              className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase mb-5"
+              style={{
+                background: "rgba(200,162,74,0.15)",
+                color: "#C8A24A",
+                border: "1px solid rgba(200,162,74,0.3)",
+              }}
+            >
+              Beyond Assessment
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              The elidi Platform Architecture
+            </h2>
+            <p className="text-white/60 text-lg max-w-3xl mx-auto">
+              The HDA-DCFM assessment is the entry point. Beneath it lies a
+              cognitive operating system powering 6 distinct product clouds —
+              all sharing one data layer, one engine, and one scientific
+              framework.
+            </p>
+          </div>
+          {/* Core Engine */}
+          <div className="relative mb-12">
+            <div
+              className="max-w-lg mx-auto rounded-2xl p-8 text-center mb-8"
+              style={{
+                background: "rgba(200,162,74,0.08)",
+                border: "2px solid rgba(200,162,74,0.4)",
+              }}
+            >
+              <div className="text-4xl mb-3">⚙️</div>
+              <h3 className="text-2xl font-bold text-white mb-2">
+                DCFM Engine
+              </h3>
+              <p className="text-white/60 text-sm">
+                Dynamic Cognitive Field Manifold — the patent-pending scientific
+                core that powers every product line
+              </p>
+              <div className="flex flex-wrap justify-center gap-2 mt-4">
+                {["PM", "EM", "RRM", "IAI", "SIS", "EDI"].map((d) => (
+                  <span
+                    key={d}
+                    className="px-3 py-1 rounded-full text-xs font-bold"
+                    style={{
+                      background: "rgba(200,162,74,0.2)",
+                      color: "#C8A24A",
+                    }}
+                  >
+                    {d}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {/* Connector */}
+            <div className="flex justify-center mb-8">
+              <div
+                className="w-0.5 h-10 opacity-30"
+                style={{ background: "#C8A24A" }}
+              />
+            </div>
+            {/* Product Clouds */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[
+                {
+                  icon: "🧠",
+                  name: "elidi Core",
+                  color: "#C8A24A",
+                  items: [
+                    "Personal Assessment",
+                    "Mind Twin Engine",
+                    "Simulation Lab",
+                  ],
+                },
+                {
+                  icon: "👥",
+                  name: "elidi People",
+                  color: "#7B9FC7",
+                  items: [
+                    "Hiring Intelligence",
+                    "Cognitive Org Design",
+                    "Conflict Predictor",
+                  ],
+                },
+                {
+                  icon: "🎯",
+                  name: "elidi Coach",
+                  color: "#82B89A",
+                  items: [
+                    "Coach Platform",
+                    "Clinical Profiling",
+                    "Wellness Index",
+                  ],
+                },
+                {
+                  icon: "📈",
+                  name: "elidi Brands",
+                  color: "#A688C4",
+                  items: [
+                    "Customer Mind Twin",
+                    "Negotiation Intel",
+                    "Brand Mapper",
+                  ],
+                },
+                {
+                  icon: "🎓",
+                  name: "elidi Edu",
+                  color: "#E08A7A",
+                  items: [
+                    "Academic Intelligence",
+                    "For Parents",
+                    "Certification",
+                  ],
+                },
+                {
+                  icon: "🔬",
+                  name: "Research + API",
+                  color: "#C4A882",
+                  items: ["Academic Platform", "Research Index", "Open API"],
+                },
+              ].map((cloud) => (
+                <div
+                  key={cloud.name}
+                  className="rounded-xl p-6"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: `1px solid ${cloud.color}33`,
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-2xl">{cloud.icon}</span>
+                    <h4 className="font-bold text-white">{cloud.name}</h4>
+                  </div>
+                  {cloud.items.map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-2 text-sm text-white/50 mb-2"
+                    >
+                      <span style={{ color: cloud.color }}>▸</span> {item}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Who Uses elidi ─────────────────────────────────────── */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div
+              className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase mb-5"
+              style={{
+                background: "#f0f7f4",
+                color: "#1B4332",
+                border: "1px solid rgba(27,67,50,0.15)",
+              }}
+            >
+              Use Cases
+            </div>
+            <h2
+              className="text-4xl md:text-5xl font-bold mb-4"
+              style={{ color: "#1B4332" }}
+            >
+              Who Uses elidi
+            </h2>
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+              Decision intelligence serves every domain where humans make
+              consequential choices.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+            {[
+              {
+                icon: "🏢",
+                persona: "HR Leaders",
+                color: "#1B4332",
+                problem:
+                  "Hiring by instinct costs enterprises 40k+ per misaligned senior hire.",
+                solution:
+                  "elidi profiles cognitive fit before the first interview — matching how candidates actually decide to what roles demand.",
+              },
+              {
+                icon: "🎯",
+                persona: "Business Coaches",
+                color: "#1B4332",
+                problem:
+                  "Client progress is invisible in session notes and anecdotal check-ins.",
+                solution:
+                  "elidi gives coaches a living Mind Twin — trackable dimension shifts that show real cognitive evolution over time.",
+              },
+              {
+                icon: "🏥",
+                persona: "Clinicians",
+                color: "#1B4332",
+                problem:
+                  "Stress-decision collapse patterns are hard to detect before crisis.",
+                solution:
+                  "DCFM surfaces early cognitive risk flags — high EM + low IAI under load — supporting clinical triage and intervention.",
+              },
+              {
+                icon: "📊",
+                persona: "Sales Leaders",
+                color: "#1B4332",
+                problem:
+                  "Sales pitches built on demographics miss the buyer's actual decision logic.",
+                solution:
+                  "Customer Mind Twin maps how your buyers cognitively process risk, trust, and commitment — transforming GTM precision.",
+              },
+              {
+                icon: "🎓",
+                persona: "Educators",
+                color: "#1B4332",
+                problem:
+                  "Academic pressure exposes students to decision-making crises without tools.",
+                solution:
+                  "elidi builds decision readiness profiles that help students, parents, and counsellors navigate pivotal life choices.",
+              },
+              {
+                icon: "🔬",
+                persona: "Researchers",
+                color: "#1B4332",
+                problem:
+                  "Behavioural science needs large-scale, reproducible cognitive datasets.",
+                solution:
+                  "The elidi Research Platform provides a live, global DCFM dataset — anonymised, structured, and publication-ready.",
+              },
+            ].map((card) => (
+              <div
+                key={card.persona}
+                className="rounded-2xl p-7 flex flex-col gap-4 hover:shadow-xl transition-all hover:-translate-y-1"
+                style={{
+                  background: "#f8faf9",
+                  border: "1px solid rgba(27,67,50,0.1)",
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{card.icon}</span>
+                  <h3
+                    className="font-bold text-xl"
+                    style={{ color: card.color }}
+                  >
+                    {card.persona}
+                  </h3>
+                </div>
+                <div>
+                  <div
+                    className="text-xs font-semibold uppercase tracking-wider mb-1"
+                    style={{ color: "#C8A24A" }}
+                  >
+                    The Challenge
+                  </div>
+                  <p className="text-gray-500 text-sm leading-relaxed">
+                    {card.problem}
+                  </p>
+                </div>
+                <div>
+                  <div
+                    className="text-xs font-semibold uppercase tracking-wider mb-1"
+                    style={{ color: "#1B4332" }}
+                  >
+                    elidi's Answer
+                  </div>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    {card.solution}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer
         className="text-center py-6 text-xs"

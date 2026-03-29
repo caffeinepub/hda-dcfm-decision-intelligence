@@ -81,10 +81,10 @@ const SAMPLE_SCORES = [
 ];
 
 const STATS = [
-  { value: 35, suffix: "+", label: "Profiles Analyzed" },
+  { value: 500, suffix: "+", label: "Profiles Analyzed" },
   { value: 6, suffix: "", label: "Decision Dimensions" },
-  { value: 10, suffix: "", label: "Archetypes Classified" },
-  { value: 150, suffix: "+", label: "Team Members Mapped" },
+  { value: 16, suffix: "", label: "Product Lines" },
+  { value: 40, suffix: "+", label: "Countries" },
 ];
 
 // ─── DCFM Particle Field Canvas ─────────────────────────────────────────────
@@ -1348,6 +1348,413 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 style={{ backgroundColor: "#C8A24A33" }}
               />
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── The elidi Platform ────────────────────────────────── */}
+      <section
+        className="py-24"
+        style={{
+          background:
+            "linear-gradient(135deg, #081C2F 0%, #0D2B1A 60%, #081C2F 100%)",
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div
+              className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase mb-5"
+              style={{
+                background: "rgba(200,162,74,0.15)",
+                color: "#C8A24A",
+                border: "1px solid rgba(200,162,74,0.3)",
+              }}
+            >
+              Platform Architecture
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              The <span style={{ color: "#C8A24A" }}>elidi</span> Platform
+            </h2>
+            <p className="text-white/60 text-lg max-w-2xl mx-auto">
+              One cognitive operating system. Six product clouds. Infinite
+              applications for human and organisational decision intelligence.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                icon: "🧠",
+                name: "elidi Core",
+                sub: "B2C · Personal",
+                color: "#C8A24A",
+                desc: "The foundation. Personal assessment, Mind Twin engine, and individual decision intelligence for anyone ready to know how they truly decide.",
+                products: [
+                  "HDA-DCFM Assessment",
+                  "Personal Mind Twin",
+                  "Decision Simulation Lab",
+                ],
+              },
+              {
+                icon: "👥",
+                name: "elidi People",
+                sub: "Enterprise · HR",
+                color: "#7B9FC7",
+                desc: "Hire by cognitive fit, not just skills. Map team decision architecture for peak performance and predict conflicts before they happen.",
+                products: [
+                  "Hiring Intelligence",
+                  "Cognitive Org Design",
+                  "Team Conflict Predictor",
+                ],
+              },
+              {
+                icon: "🎯",
+                name: "elidi Coach",
+                sub: "Coaching · Clinical",
+                color: "#82B89A",
+                desc: "Give coaches and clinicians a living cognitive map of their clients — track real evolution, not just session notes.",
+                products: [
+                  "Coach Intelligence Platform",
+                  "Clinical Decision Profiling",
+                  "Cognitive Wellness Index",
+                ],
+              },
+              {
+                icon: "📈",
+                name: "elidi Brands",
+                sub: "Sales · Marketing",
+                color: "#A688C4",
+                desc: "Understand your customer's decision fingerprint. Align your GTM strategy with how your buyers actually think and choose.",
+                products: [
+                  "Customer Mind Twin",
+                  "Negotiation Intelligence",
+                  "Brand Personality Mapper",
+                ],
+              },
+              {
+                icon: "🎓",
+                name: "elidi Edu",
+                sub: "Education · Families",
+                color: "#E08A7A",
+                desc: "Help students, parents, and educators understand decision readiness, academic resilience, and life-path intelligence.",
+                products: [
+                  "Academic Decision Intelligence",
+                  "elidi for Parents",
+                  "elidi Certification",
+                ],
+              },
+              {
+                icon: "🔬",
+                name: "elidi Research + API",
+                sub: "Science · Infrastructure",
+                color: "#C4A882",
+                desc: "The infrastructure layer. Open the DCFM engine to researchers, developers, and enterprise integrations worldwide.",
+                products: [
+                  "Academic Research Platform",
+                  "elidi Research Index",
+                  "elidi API — Embed Anywhere",
+                ],
+              },
+            ].map((cloud) => (
+              <div
+                key={cloud.name}
+                className="rounded-2xl p-7 flex flex-col gap-4 transition-all hover:-translate-y-1 hover:shadow-2xl"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: `1px solid ${cloud.color}33`,
+                  backdropFilter: "blur(10px)",
+                }}
+              >
+                <div className="flex items-center gap-3 mb-1">
+                  <span className="text-3xl">{cloud.icon}</span>
+                  <div>
+                    <div className="font-bold text-white text-lg leading-tight">
+                      {cloud.name}
+                    </div>
+                    <div
+                      className="text-xs tracking-wider uppercase"
+                      style={{ color: cloud.color }}
+                    >
+                      {cloud.sub}
+                    </div>
+                  </div>
+                </div>
+                <p className="text-white/60 text-sm leading-relaxed">
+                  {cloud.desc}
+                </p>
+                <div
+                  className="flex flex-col gap-1.5 mt-auto pt-3"
+                  style={{ borderTop: `1px solid ${cloud.color}22` }}
+                >
+                  {cloud.products.map((p) => (
+                    <div
+                      key={p}
+                      className="flex items-center gap-2 text-xs text-white/50"
+                    >
+                      <span style={{ color: cloud.color }}>▸</span> {p}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Built for Business Growth ──────────────────────────── */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div
+              className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase mb-5"
+              style={{
+                background: "#f0f7f4",
+                color: "#1B4332",
+                border: "1px solid rgba(27,67,50,0.15)",
+              }}
+            >
+              Enterprise Value
+            </div>
+            <h2
+              className="text-4xl md:text-5xl font-bold mb-4"
+              style={{ color: "#1B4332" }}
+            >
+              Built for Business Growth
+            </h2>
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+              Decision intelligence is the next competitive frontier. elidi
+              turns invisible cognitive patterns into measurable strategic
+              advantages.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                icon: "🏆",
+                title: "Hiring Intelligence",
+                color: "#1B4332",
+                desc: "Stop hiring blind. Profile cognitive decision styles before the first interview. Match role requirements to how candidates actually think under pressure — not just their CV.",
+                metric: "3.2x better role retention",
+              },
+              {
+                icon: "⚡",
+                title: "Team Conflict Prevention",
+                color: "#1B4332",
+                desc: "High-EM + low-SIS combinations under deadline pressure are predictable. DCFM maps exactly where your team's decision architecture will fracture before it does.",
+                metric: "Predict friction 6 weeks early",
+              },
+              {
+                icon: "🎯",
+                title: "Sales & GTM Alignment",
+                color: "#1B4332",
+                desc: "Know your buyer's decision fingerprint before they do. Align messaging, negotiation style, and sales cadence to how your customers cognitively process and commit.",
+                metric: "Higher close rates, shorter cycles",
+              },
+              {
+                icon: "🧘",
+                title: "Executive Coaching ROI",
+                color: "#1B4332",
+                desc: "Give coaches a living cognitive map that evolves with every session. Track real mind twin progress — not just conversation notes — with measurable dimension shifts.",
+                metric: "Quantified coaching outcomes",
+              },
+              {
+                icon: "🏥",
+                title: "Clinical Decision Profiling",
+                color: "#1B4332",
+                desc: "High EM combined with low IAI under stress is a detectable risk pattern. elidi surfaces cognitive triage flags that support — not replace — clinical judgment.",
+                metric: "Early identification of stress patterns",
+              },
+              {
+                icon: "🌍",
+                title: "Global Research Index",
+                color: "#1B4332",
+                desc: "Aggregate DCFM data across industries, regions, and demographics to publish the world's first Decision Intelligence Index — creating unmatched scientific credibility.",
+                metric: "40+ countries contributing",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="rounded-2xl p-7 flex flex-col gap-3 group hover:shadow-xl transition-all hover:-translate-y-1"
+                style={{
+                  background: "#f8faf9",
+                  border: "1px solid rgba(27,67,50,0.1)",
+                }}
+              >
+                <span className="text-4xl mb-1">{item.icon}</span>
+                <h3 className="text-xl font-bold" style={{ color: item.color }}>
+                  {item.title}
+                </h3>
+                <p className="text-gray-500 text-sm leading-relaxed flex-1">
+                  {item.desc}
+                </p>
+                <div
+                  className="mt-3 px-3 py-1.5 rounded-full text-xs font-semibold inline-block self-start"
+                  style={{
+                    background: "rgba(27,67,50,0.08)",
+                    color: "#1B4332",
+                  }}
+                >
+                  {item.metric}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── 16 Product Lines ────────────────────────────────────── */}
+      <section className="py-24" style={{ background: "#0D2B1A" }}>
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div
+              className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase mb-5"
+              style={{
+                background: "rgba(200,162,74,0.15)",
+                color: "#C8A24A",
+                border: "1px solid rgba(200,162,74,0.3)",
+              }}
+            >
+              Product Roadmap
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              16 Ways elidi Changes Everything
+            </h2>
+            <p className="text-white/60 text-lg max-w-2xl mx-auto">
+              From hiring to healing, from coaching to research — every domain
+              where decisions are made, elidi has a product built for it.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                num: "01",
+                name: "elidi for Teams",
+                desc: "Cognitive Org Design — map how your organisation decides",
+                cloud: "People",
+              },
+              {
+                num: "02",
+                name: "Hiring Intelligence",
+                desc: "Hire by decision fit, not just skills and experience",
+                cloud: "People",
+              },
+              {
+                num: "03",
+                name: "Team Conflict Predictor",
+                desc: "Spot cognitive clashes before they become culture crises",
+                cloud: "People",
+              },
+              {
+                num: "04",
+                name: "Academic Intelligence",
+                desc: "Decision readiness for students facing life's crossroads",
+                cloud: "Edu",
+              },
+              {
+                num: "05",
+                name: "Coach Intelligence",
+                desc: "Living cognitive maps that evolve with every client session",
+                cloud: "Coach",
+              },
+              {
+                num: "06",
+                name: "elidi for Parents",
+                desc: "Understand your child's decision style before they do",
+                cloud: "Edu",
+              },
+              {
+                num: "07",
+                name: "Clinical Stress Profiling",
+                desc: "Cognitive risk flags for high-stakes clinical environments",
+                cloud: "Coach",
+              },
+              {
+                num: "08",
+                name: "Cognitive Wellness Index",
+                desc: "Monthly decision health tracking for sustainable performance",
+                cloud: "Coach",
+              },
+              {
+                num: "09",
+                name: "Customer Mind Twin",
+                desc: "Know how your buyer thinks — build GTM that converts",
+                cloud: "Brands",
+              },
+              {
+                num: "10",
+                name: "Negotiation Intelligence",
+                desc: "Profile both sides of the table before the deal begins",
+                cloud: "Brands",
+              },
+              {
+                num: "11",
+                name: "Brand Personality Mapper",
+                desc: "Match your brand's decision identity to your audience",
+                cloud: "Brands",
+              },
+              {
+                num: "12",
+                name: "Academic Research Platform",
+                desc: "Publish, collaborate, and advance decision science globally",
+                cloud: "Research",
+              },
+              {
+                num: "13",
+                name: "elidi Research Index",
+                desc: "The world's first annual global decision intelligence report",
+                cloud: "Research",
+              },
+              {
+                num: "14",
+                name: "elidi API",
+                desc: "Embed DCFM intelligence into any platform, anywhere",
+                cloud: "API",
+              },
+              {
+                num: "15",
+                name: "elidi Certification",
+                desc: "Train and certify the next generation of decision coaches",
+                cloud: "Edu",
+              },
+              {
+                num: "16",
+                name: "Mind Twin Marketplace",
+                desc: "Share, explore, and simulate elite decision profiles",
+                cloud: "Core",
+              },
+            ].map((product) => (
+              <div
+                key={product.num}
+                className="rounded-xl p-5 transition-all hover:-translate-y-1 hover:shadow-xl group"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(200,162,74,0.15)",
+                }}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <span
+                    className="text-3xl font-black"
+                    style={{ color: "rgba(200,162,74,0.3)" }}
+                  >
+                    {product.num}
+                  </span>
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full font-medium"
+                    style={{
+                      background: "rgba(200,162,74,0.1)",
+                      color: "#C8A24A",
+                    }}
+                  >
+                    {product.cloud}
+                  </span>
+                </div>
+                <h4 className="font-bold text-white text-sm mb-1">
+                  {product.name}
+                </h4>
+                <p className="text-white/40 text-xs leading-relaxed">
+                  {product.desc}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
