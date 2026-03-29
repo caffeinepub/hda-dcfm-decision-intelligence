@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AuthModal } from "../components/AuthModal";
 import { Footer } from "../components/Footer";
-import { useActor } from "../hooks/useActor";
-import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
 interface MyDecisionTwinPageProps {
   onNavigate: (page: string) => void;
@@ -108,36 +106,13 @@ const FAQ_ITEMS = [
 ];
 
 export function MyDecisionTwinPage({ onNavigate }: MyDecisionTwinPageProps) {
-  const { identity } = useInternetIdentity();
-  const { actor } = useActor();
+  // Always start with auth modal hidden — user must explicitly click to trigger login
   const [showAuth, setShowAuth] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
 
-  // Auto-show profile form if user is authenticated but hasn't completed profile
-  useEffect(() => {
-    if (!isAuthenticated || !actor) return;
-    actor
-      .hasCompletedProfile()
-      .then((done) => {
-        if (!done) setShowAuth(true);
-      })
-      .catch(() => {});
-  }, [isAuthenticated, actor]);
-
-  const handleCreateTwin = async () => {
-    if (!isAuthenticated) {
-      setShowAuth(true);
-      return;
-    }
-    if (actor) {
-      const done = await actor.hasCompletedProfile().catch(() => false);
-      if (done) {
-        onNavigate("userDashboard");
-      } else {
-        setShowAuth(true);
-      }
-    }
+  // Any CTA click always triggers the login modal — never auto-skip
+  const handleCreateTwin = () => {
+    setShowAuth(true);
   };
 
   return (
@@ -183,26 +158,11 @@ export function MyDecisionTwinPage({ onNavigate }: MyDecisionTwinPageProps) {
             <button
               type="button"
               onClick={handleCreateTwin}
-              data-ocid="hero.primary_button"
               className="px-8 py-4 rounded-xl font-bold text-base transition-all hover:opacity-90 active:scale-95"
               style={{ backgroundColor: "#C8A24A", color: "#1B4332" }}
             >
               Create My Decision Twin
             </button>
-            {isAuthenticated && (
-              <button
-                type="button"
-                data-ocid="hero.dashboard.button"
-                onClick={() => onNavigate("userDashboard")}
-                className="px-8 py-4 rounded-xl font-bold text-base transition-all hover:bg-white/10"
-                style={{
-                  border: "1px solid rgba(255,255,255,0.2)",
-                  color: "white",
-                }}
-              >
-                Go to My Dashboard
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -293,7 +253,7 @@ export function MyDecisionTwinPage({ onNavigate }: MyDecisionTwinPageProps) {
         </div>
       </div>
 
-      {/* Inside Your Dashboard — 5 detailed tab cards */}
+      {/* Inside Your Dashboard */}
       <div className="max-w-5xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-white mb-3">
@@ -351,23 +311,19 @@ export function MyDecisionTwinPage({ onNavigate }: MyDecisionTwinPageProps) {
           ))}
         </div>
 
-        {/* Go to Dashboard CTA after features */}
-        {isAuthenticated && (
-          <div className="text-center mt-10">
-            <button
-              type="button"
-              data-ocid="features.dashboard.button"
-              onClick={() => onNavigate("userDashboard")}
-              className="px-8 py-3 rounded-xl font-bold text-sm transition-all hover:opacity-90"
-              style={{ backgroundColor: "#C8A24A", color: "#1B4332" }}
-            >
-              Go to My Dashboard →
-            </button>
-          </div>
-        )}
+        <div className="text-center mt-10">
+          <button
+            type="button"
+            onClick={handleCreateTwin}
+            className="px-8 py-3 rounded-xl font-bold text-sm transition-all hover:opacity-90"
+            style={{ backgroundColor: "#C8A24A", color: "#1B4332" }}
+          >
+            Get Started — Sign In to Create Your Twin
+          </button>
+        </div>
       </div>
 
-      {/* FAQ / Training Guide */}
+      {/* FAQ */}
       <div
         style={{
           backgroundColor: "rgba(200,162,74,0.03)",
@@ -397,7 +353,6 @@ export function MyDecisionTwinPage({ onNavigate }: MyDecisionTwinPageProps) {
               >
                 <button
                   type="button"
-                  data-ocid={`faq.item.${i + 1}`}
                   className="w-full text-left flex items-center justify-between gap-4 px-5 py-4 text-white font-medium text-sm transition-colors hover:text-white/80"
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                 >
@@ -423,7 +378,6 @@ export function MyDecisionTwinPage({ onNavigate }: MyDecisionTwinPageProps) {
               </div>
             ))}
           </div>
-          {/* Admin reassurance note */}
           <p className="text-center text-white/30 text-xs mt-8">
             🔒 The Admin Panel is only visible to the platform administrator —
             regular users will never see it.
@@ -465,31 +419,14 @@ export function MyDecisionTwinPage({ onNavigate }: MyDecisionTwinPageProps) {
           "You're not just analyzing the mind anymore. You're letting people
           design and simulate it."
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button
-            type="button"
-            data-ocid="cta.primary_button"
-            onClick={handleCreateTwin}
-            className="px-10 py-4 rounded-xl font-bold text-base transition-all hover:opacity-90 active:scale-95"
-            style={{ backgroundColor: "#C8A24A", color: "#1B4332" }}
-          >
-            Create My Decision Twin
-          </button>
-          {isAuthenticated && (
-            <button
-              type="button"
-              data-ocid="cta.dashboard.button"
-              onClick={() => onNavigate("userDashboard")}
-              className="px-10 py-4 rounded-xl font-bold text-base transition-all hover:bg-white/10"
-              style={{
-                border: "1px solid rgba(255,255,255,0.2)",
-                color: "white",
-              }}
-            >
-              Go to My Dashboard
-            </button>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={handleCreateTwin}
+          className="px-10 py-4 rounded-xl font-bold text-base transition-all hover:opacity-90 active:scale-95"
+          style={{ backgroundColor: "#C8A24A", color: "#1B4332" }}
+        >
+          Create My Decision Twin
+        </button>
       </div>
 
       <Footer />

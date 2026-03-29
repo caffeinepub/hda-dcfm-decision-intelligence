@@ -97,12 +97,22 @@ export function AdminDashboardPage({ onNavigate }: Props) {
           actor.getPlatformStats().catch(() => null),
           actor.getAllUserProfiles().catch(() => []),
         ]);
-        if (profileOpt && profileOpt.__kind__ === "Some") {
-          setSuperAdminEmail(
-            (profileOpt as { __kind__: "Some"; value: UserProfile }).value
-              .email || "",
-          );
+        // Handle both array format and __kind__ format for profile extraction
+        let adminEmail = "";
+        if (Array.isArray(profileOpt) && profileOpt.length > 0) {
+          const raw = profileOpt[0] as Record<string, unknown>;
+          adminEmail = typeof raw.email === "string" ? raw.email : "";
+        } else if (
+          profileOpt &&
+          typeof profileOpt === "object" &&
+          "__kind__" in profileOpt &&
+          (profileOpt as { __kind__: string }).__kind__ === "Some"
+        ) {
+          const v = (profileOpt as { __kind__: "Some"; value: UserProfile })
+            .value;
+          adminEmail = v.email || "";
         }
+        setSuperAdminEmail(adminEmail);
         setStats(s as PlatformStats | null);
         setUsers(u as UserProfile[]);
         setLoading(false);
