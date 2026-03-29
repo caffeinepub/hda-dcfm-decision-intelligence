@@ -1,3 +1,5 @@
+import type React from "react";
+import { useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -775,6 +777,464 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     </div>
   );
 };
+
+// ---- Helper components for interactive sections ----
+
+function NeuralDecisionNetwork({
+  demoProfiles,
+}: { demoProfiles: typeof DEMO_PROFILES }) {
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const CX = 260;
+  const CY = 200;
+  const ORBIT_R = 130;
+  const nodes = [
+    { id: "PM", color: "#C8A24A", score: 5.9 },
+    { id: "EM", color: "#7B9FC7", score: 4.8 },
+    { id: "RRM", color: "#82B89A", score: 5.4 },
+    { id: "IAI", color: "#C4A882", score: 6.1 },
+    { id: "SIS", color: "#A688C4", score: 4.9 },
+    { id: "EDI", color: "#E08A7A", score: 5.7 },
+  ].map((n, i) => {
+    const a = (Math.PI * 2 * i) / 6 - Math.PI / 2;
+    return {
+      ...n,
+      x: CX + ORBIT_R * Math.cos(a),
+      y: CY + ORBIT_R * Math.sin(a),
+    };
+  });
+  const edges = [
+    { a: "PM", b: "EDI", w: 0.72, neg: false },
+    { a: "PM", b: "IAI", w: 0.68, neg: false },
+    { a: "EM", b: "SIS", w: 0.65, neg: false },
+    { a: "RRM", b: "PM", w: 0.55, neg: false },
+    { a: "IAI", b: "RRM", w: 0.6, neg: false },
+    { a: "EDI", b: "RRM", w: 0.58, neg: false },
+    { a: "EM", b: "IAI", w: 0.42, neg: true },
+    { a: "SIS", b: "EDI", w: 0.38, neg: true },
+    { a: "PM", b: "EM", w: 0.3, neg: false },
+    { a: "IAI", b: "SIS", w: 0.28, neg: false },
+    { a: "EDI", b: "EM", w: 0.25, neg: false },
+  ];
+  const nodeMap = Object.fromEntries(nodes.map((n) => [n.id, n]));
+  const dimDesc: Record<string, string> = {
+    PM: "Process Management: Structured, systematic decision workflows.",
+    EM: "Emotional Management: Regulation of emotional states for clear judgment.",
+    RRM: "Risk & Reward: Calibrated uncertainty vs. opportunity assessment.",
+    IAI: "Analytical Intelligence: Data synthesis reducing cognitive bias.",
+    SIS: "Social Skills: Stakeholder dynamics and collaborative intelligence.",
+    EDI: "Executive Intelligence: Strategic thinking and high-stakes execution.",
+  };
+  void demoProfiles;
+  return (
+    <div className="flex flex-col lg:flex-row gap-8 items-start">
+      <svg
+        width="520"
+        height="400"
+        viewBox="0 0 520 400"
+        className="flex-shrink-0 w-full max-w-lg"
+        aria-hidden="true"
+      >
+        {Array.from({ length: 48 }, (_, k) => {
+          const row = Math.floor(k / 8);
+          const col = k % 8;
+          const hx = col * 60 + (row % 2) * 30;
+          const hy = row * 52;
+          return (
+            <polygon
+              key={`p${hx}-${hy}`}
+              points={`${hx + 15},${hy} ${hx + 30},${hy + 9} ${hx + 30},${hy + 26} ${hx + 15},${hy + 35} ${hx},${hy + 26} ${hx},${hy + 9}`}
+              fill="none"
+              stroke="rgba(200,162,74,0.04)"
+              strokeWidth="1"
+            />
+          );
+        })}
+        {edges.map((e) => {
+          const na = nodeMap[e.a];
+          const nb = nodeMap[e.b];
+          if (!na || !nb) return null;
+          const isHighlighted =
+            selectedNode && (e.a === selectedNode || e.b === selectedNode);
+          const opacity = selectedNode
+            ? isHighlighted
+              ? 0.9
+              : 0.1
+            : e.neg
+              ? 0.5
+              : 0.4;
+          return (
+            <line
+              key={`${e.a}-${e.b}`}
+              x1={na.x}
+              y1={na.y}
+              x2={nb.x}
+              y2={nb.y}
+              stroke={e.neg ? "#E08A7A" : GOLD}
+              strokeWidth={e.w * 4}
+              strokeOpacity={opacity}
+              strokeDasharray={e.neg ? "6 4" : "none"}
+            />
+          );
+        })}
+        {nodes.map((n) => {
+          const isSelected = selectedNode === n.id;
+          const isConnected = selectedNode
+            ? edges.some(
+                (e) =>
+                  (e.a === selectedNode && e.b === n.id) ||
+                  (e.b === selectedNode && e.a === n.id),
+              )
+            : false;
+          const opacity = selectedNode
+            ? isSelected || isConnected
+              ? 1
+              : 0.4
+            : 1;
+          return (
+            <g
+              key={n.id}
+              style={{ cursor: "pointer", opacity }}
+              tabIndex={0}
+              onClick={() =>
+                setSelectedNode(selectedNode === n.id ? null : n.id)
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ")
+                  setSelectedNode(selectedNode === n.id ? null : n.id);
+              }}
+            >
+              <circle
+                cx={n.x}
+                cy={n.y}
+                r={28 + (n.score / 7) * 8}
+                fill={n.color}
+                fillOpacity={0.1}
+              />
+              <circle
+                cx={n.x}
+                cy={n.y}
+                r={22}
+                fill={n.color}
+                fillOpacity={isSelected ? 0.9 : 0.7}
+                stroke={n.color}
+                strokeWidth={isSelected ? 3 : 1.5}
+              />
+              <text
+                x={n.x}
+                y={n.y + 5}
+                textAnchor="middle"
+                fill="white"
+                fontSize={10}
+                fontWeight="bold"
+              >
+                {n.id}
+              </text>
+              <text
+                x={n.x}
+                y={n.y + 50}
+                textAnchor="middle"
+                fill={n.color}
+                fontSize={8}
+                fillOpacity={0.7}
+              >
+                {n.score.toFixed(1)}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      <div className="flex-1 space-y-3">
+        {selectedNode ? (
+          <div
+            className="rounded-xl p-4"
+            style={{
+              backgroundColor: "rgba(255,255,255,0.06)",
+              border: `1px solid ${nodeMap[selectedNode]?.color}50`,
+            }}
+          >
+            <div
+              className="text-sm font-bold mb-2"
+              style={{ color: nodeMap[selectedNode]?.color }}
+            >
+              {selectedNode} — Active Connections
+            </div>
+            <p className="text-xs text-white/60 mb-3">
+              {dimDesc[selectedNode]}
+            </p>
+            {edges
+              .filter((e) => e.a === selectedNode || e.b === selectedNode)
+              .map((e) => {
+                const other = e.a === selectedNode ? e.b : e.a;
+                return (
+                  <div
+                    key={`${e.a}-${e.b}`}
+                    className="flex items-center gap-2 mb-2"
+                  >
+                    <div
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: e.neg ? "#E08A7A" : GOLD }}
+                    />
+                    <span className="text-xs text-white/70">
+                      {selectedNode} → {other}
+                    </span>
+                    <span
+                      className="text-xs font-bold ml-auto"
+                      style={{ color: e.neg ? "#E08A7A" : GOLD }}
+                    >
+                      {e.neg ? "−" : "+"}
+                      {e.w.toFixed(2)}
+                    </span>
+                  </div>
+                );
+              })}
+          </div>
+        ) : (
+          <p className="text-xs text-white/40 italic">
+            Click any node to explore its dimensional connections
+          </p>
+        )}
+        <div className="space-y-2 mt-4">
+          <div className="text-xs font-bold text-white/70 mb-2">
+            Correlation Key
+          </div>
+          <div className="flex items-center gap-2 text-xs text-white/50">
+            <div className="w-8 h-0.5" style={{ backgroundColor: GOLD }} />{" "}
+            Positive correlation (synergistic pathway)
+          </div>
+          <div className="flex items-center gap-2 text-xs text-white/50">
+            <div
+              className="w-8 h-0.5"
+              style={{
+                backgroundColor: "#E08A7A",
+                borderTop: "2px dashed #E08A7A",
+              }}
+            />{" "}
+            Negative correlation (productive tension)
+          </div>
+          <div className="text-xs text-white/40 mt-3 leading-relaxed">
+            Line thickness = correlation strength. Node size reflects cohort
+            average score. The PM–EDI axis (r=0.72) is the platform&apos;s most
+            powerful synergy: structured thinkers execute decisively.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DecisionGauge() {
+  const [needleAngle, setNeedleAngle] = useState(-90);
+  useEffect(() => {
+    const target = -90 + 0.72 * 180;
+    let start: number | null = null;
+    const animate = (ts: number) => {
+      if (!start) start = ts;
+      const progress = Math.min((ts - start) / 2000, 1);
+      const eased = 1 - (1 - progress) ** 3;
+      setNeedleAngle(-90 + eased * (target - -90));
+      if (progress < 1) requestAnimationFrame(animate);
+    };
+    const raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const W = 400;
+  const CX = 200;
+  const CY = 220;
+  const R = 160;
+  const STROKE = 28;
+  const zones = [
+    { start: 0, end: 0.4, color: "#CD5C5C", label: "Reactive" },
+    { start: 0.4, end: 0.7, color: GOLD, label: "Developing" },
+    { start: 0.7, end: 1.0, color: "#50C878", label: "Sovereign" },
+  ];
+  const arcPath = (startPct: number, endPct: number) => {
+    const startAngle = Math.PI + startPct * Math.PI;
+    const endAngle = Math.PI + endPct * Math.PI;
+    const x1 = CX + R * Math.cos(startAngle);
+    const y1 = CY + R * Math.sin(startAngle);
+    const x2 = CX + R * Math.cos(endAngle);
+    const y2 = CY + R * Math.sin(endAngle);
+    return `M ${x1} ${y1} A ${R} ${R} 0 0 1 ${x2} ${y2}`;
+  };
+  const needleRad = (needleAngle * Math.PI) / 180;
+  const NL = 130;
+  const nx = CX + NL * Math.cos(needleRad);
+  const ny = CY + NL * Math.sin(needleRad);
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-10 items-center">
+      <div className="flex-shrink-0">
+        <svg
+          width={W}
+          height={260}
+          viewBox={`0 0 ${W} 260`}
+          className="w-full max-w-md"
+          aria-hidden="true"
+        >
+          {zones.map((z) => (
+            <path
+              key={z.label}
+              d={arcPath(z.start, z.end)}
+              fill="none"
+              stroke={z.color}
+              strokeWidth={STROKE}
+              strokeLinecap="round"
+              opacity={0.3}
+            />
+          ))}
+          <path
+            d={arcPath(0, 0.72)}
+            fill="none"
+            stroke="#50C878"
+            strokeWidth={STROKE - 6}
+            strokeLinecap="round"
+            opacity={0.8}
+          />
+          {zones.map((z) => {
+            const midPct = (z.start + z.end) / 2;
+            const a = Math.PI + midPct * Math.PI;
+            const lx = CX + (R + 26) * Math.cos(a);
+            const ly = CY + (R + 26) * Math.sin(a);
+            return (
+              <text
+                key={z.label}
+                x={lx}
+                y={ly}
+                textAnchor="middle"
+                fill={z.color}
+                fontSize={9}
+                fontWeight="bold"
+              >
+                {z.label}
+              </text>
+            );
+          })}
+          {Array.from({ length: 11 }, (_, i) => {
+            const pct = i / 10;
+            const a = Math.PI + pct * Math.PI;
+            const x1 = CX + (R - 18) * Math.cos(a);
+            const y1 = CY + (R - 18) * Math.sin(a);
+            const x2 = CX + (R - 8) * Math.cos(a);
+            const y2 = CY + (R - 8) * Math.sin(a);
+            return (
+              <line
+                key={pct.toFixed(1)}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                stroke="rgba(255,255,255,0.3)"
+                strokeWidth={i % 5 === 0 ? 2 : 1}
+              />
+            );
+          })}
+          <line
+            x1={CX}
+            y1={CY}
+            x2={nx}
+            y2={ny}
+            stroke="white"
+            strokeWidth={3}
+            strokeLinecap="round"
+          />
+          <circle cx={CX} cy={CY} r={10} fill="white" />
+          <circle cx={CX} cy={CY} r={6} fill={GOLD} />
+          <text
+            x={CX}
+            y={CY - 30}
+            textAnchor="middle"
+            fill={GOLD}
+            fontSize={32}
+            fontWeight="bold"
+          >
+            7.2
+          </text>
+          <text
+            x={CX}
+            y={CY - 12}
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.5)"
+            fontSize={10}
+          >
+            out of 10
+          </text>
+          <text
+            x={CX}
+            y={CY + 40}
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.4)"
+            fontSize={9}
+          >
+            NovaMind Corp Cohort Average
+          </text>
+        </svg>
+      </div>
+      <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          {
+            label: "Fastest Decider",
+            name: "Yuki Tanaka",
+            value: "2.1s avg",
+            color: "#82B89A",
+            icon: "⚡",
+          },
+          {
+            label: "Most Consistent",
+            name: "Lucas Muller",
+            value: "97% stable",
+            color: GOLD,
+            icon: "🎯",
+          },
+          {
+            label: "Highest IAI",
+            name: "David Chen",
+            value: "7.5 / 7.0",
+            color: "#7B9FC7",
+            icon: "🧠",
+          },
+          {
+            label: "Top EDI Score",
+            name: "Arjun Mehta",
+            value: "7.0 EDI",
+            color: "#E08A7A",
+            icon: "👑",
+          },
+          {
+            label: "Sovereign Zone",
+            name: "20 of 35",
+            value: "57% cohort",
+            color: "#50C878",
+            icon: "🏆",
+          },
+          {
+            label: "Avg Assessment",
+            name: "5.1 sessions",
+            value: "per member",
+            color: "#A688C4",
+            icon: "📊",
+          },
+        ].map((m) => (
+          <div
+            key={m.label}
+            className="rounded-xl p-4 text-center"
+            style={{
+              backgroundColor: "rgba(255,255,255,0.04)",
+              border: `1px solid ${m.color}30`,
+            }}
+          >
+            <div className="text-2xl mb-1">{m.icon}</div>
+            <div className="text-xs text-white/40 mb-1">{m.label}</div>
+            <div className="font-bold text-sm" style={{ color: m.color }}>
+              {m.name}
+            </div>
+            <div className="text-xs text-white/50 mt-0.5">{m.value}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function InvestorShowcasePage({ onNavigate }: Props) {
   // Computed data
@@ -3947,6 +4407,670 @@ export function InvestorShowcasePage({ onNavigate }: Props) {
                 ))}
               </div>
             </div>
+          </div>
+        </SectionCard>
+
+        {/* Section 23: Cognitive Fingerprint Gallery */}
+        <SectionCard
+          number="23"
+          title="Cognitive Fingerprint Gallery — 12 Unique Decision DNA Profiles"
+        >
+          <p className="text-white/60 text-sm mb-6">
+            Every mind is architecturally unique. These 12 profiles from the
+            elidi cohort illustrate the extraordinary diversity of cognitive
+            decision patterns — no two fingerprints are the same.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {DEMO_PROFILES.slice(0, 12).map((profile, idx) => {
+              const scores = [
+                profile.pm,
+                profile.em,
+                profile.rrm,
+                profile.iai,
+                profile.sis,
+                profile.edi,
+              ];
+              const cx = 80;
+              const cy = 80;
+              const r = 55;
+              const n = 6;
+              const angle = (i: number) => (Math.PI * 2 * i) / n - Math.PI / 2;
+              const polygonPts = (radius: number) =>
+                Array.from({ length: n }, (_, i) => {
+                  const a = angle(i);
+                  return `${cx + radius * Math.cos(a)},${cy + radius * Math.sin(a)}`;
+                }).join(" ");
+              const dataPts = scores
+                .map((s, i) => {
+                  const a = angle(i);
+                  const nr = (s / 7) * r;
+                  return `${cx + nr * Math.cos(a)},${cy + nr * Math.sin(a)}`;
+                })
+                .join(" ");
+              const ARCHETYPE_COLORS: Record<string, string> = {
+                "Sovereign Navigator": "#C8A24A",
+                "Decisive Executor": "#82B89A",
+                "Empathic Sentinel": "#7B9FC7",
+                "Reactive Empath": "#E08A7A",
+                "Adaptive Harmonizer": "#A688C4",
+                "Balanced Strategist": "#C4A882",
+                "Social Harmonizer": "#7BBFC4",
+              };
+              const arcColor = ARCHETYPE_COLORS[profile.archetype] || GOLD;
+              const COUNTRY_FLAGS: Record<string, string> = {
+                India: "🇮🇳",
+                Singapore: "🇸🇬",
+                "United Kingdom": "🇬🇧",
+                UAE: "🇦🇪",
+                Nigeria: "🇳🇬",
+                Russia: "🇷🇺",
+                Mexico: "🇲🇽",
+                Japan: "🇯🇵",
+                Egypt: "🇪🇬",
+                Sweden: "🇸🇪",
+                Senegal: "🇸🇳",
+                "South Korea": "🇰🇷",
+              };
+              const flag = COUNTRY_FLAGS[profile.country] || "🌍";
+              return (
+                <div
+                  key={profile.name}
+                  className="rounded-xl p-4 flex flex-col items-center transition-all duration-300 hover:scale-105 cursor-pointer"
+                  style={{
+                    backgroundColor: "rgba(255,255,255,0.04)",
+                    border: `1px solid ${arcColor}30`,
+                    willChange: "transform",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.boxShadow =
+                      `0 0 20px ${arcColor}30`;
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.boxShadow =
+                      "none";
+                  }}
+                >
+                  <svg
+                    width="160"
+                    height="160"
+                    viewBox="0 0 160 160"
+                    aria-hidden="true"
+                  >
+                    <style>{`
+                      @keyframes draw-radar-${idx} {
+                        from { stroke-dashoffset: 400; }
+                        to { stroke-dashoffset: 0; }
+                      }
+                    `}</style>
+                    {[2, 4, 6].map((l) => (
+                      <polygon
+                        key={l}
+                        points={polygonPts((l / 7) * r)}
+                        fill="none"
+                        stroke={arcColor}
+                        strokeOpacity={0.12}
+                        strokeWidth={1}
+                      />
+                    ))}
+                    {["PM", "EM", "RRM", "IAI", "SIS", "EDI"].map((dim, i) => {
+                      const a = angle(i);
+                      return (
+                        <line
+                          key={dim}
+                          x1={cx}
+                          y1={cy}
+                          x2={cx + r * Math.cos(a)}
+                          y2={cy + r * Math.sin(a)}
+                          stroke={arcColor}
+                          strokeOpacity={0.1}
+                          strokeWidth={1}
+                        />
+                      );
+                    })}
+                    <polygon
+                      points={dataPts}
+                      fill={arcColor}
+                      fillOpacity={0.2}
+                      stroke={arcColor}
+                      strokeWidth={2}
+                      strokeDasharray="400"
+                      style={{
+                        animation: `draw-radar-${idx} 1.5s ease-out ${idx * 0.1}s both`,
+                      }}
+                    />
+                    {scores.map((s, i) => {
+                      const a = angle(i);
+                      const nr = (s / 7) * r;
+                      return (
+                        <circle
+                          key={a.toFixed(3)}
+                          cx={cx + nr * Math.cos(a)}
+                          cy={cy + nr * Math.sin(a)}
+                          r={3}
+                          fill={arcColor}
+                        />
+                      );
+                    })}
+                  </svg>
+                  <div className="text-xs font-bold text-white mt-1 text-center truncate w-full">
+                    {profile.name}
+                  </div>
+                  <div className="text-xs text-white/40 mt-0.5">
+                    {flag} {profile.country}
+                  </div>
+                  <div
+                    className="mt-2 px-2 py-0.5 rounded-full text-xs font-semibold"
+                    style={{
+                      backgroundColor: `${arcColor}20`,
+                      color: arcColor,
+                    }}
+                  >
+                    {profile.archetype}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </SectionCard>
+
+        {/* Section 24: Decision Force Distribution */}
+        <SectionCard
+          number="24"
+          title="Decision Force Distribution — Real-Time Cognitive Spectrum"
+        >
+          <p className="text-white/60 text-sm mb-6">
+            All 35 profiles plotted across the Decision Force Spectrum. The
+            distribution reveals a bimodal pattern — high performers cluster in
+            the Sovereign Zone, while the Developing Zone shows the greatest
+            growth opportunity for organizational transformation.
+          </p>
+          {(() => {
+            const W = 700;
+            const H = 200;
+            const PAD = 60;
+            const plotW = W - PAD * 2;
+            const profiles35 = DEMO_PROFILES.map((p) => ({
+              ...p,
+              dflScore: (p.pm + p.em + p.rrm + p.iai + p.sis + p.edi) / 6,
+            }));
+            const ARCHETYPE_COLORS: Record<string, string> = {
+              "Sovereign Navigator": "#C8A24A",
+              "Decisive Executor": "#82B89A",
+              "Empathic Sentinel": "#7B9FC7",
+              "Reactive Empath": "#E08A7A",
+              "Adaptive Harmonizer": "#A688C4",
+              "Balanced Strategist": "#C4A882",
+              "Social Harmonizer": "#7BBFC4",
+            };
+            // Beeswarm: place circles avoiding overlap
+            const placed: { x: number; y: number }[] = [];
+            const circles = profiles35.map((p) => {
+              const x = PAD + ((p.dflScore - 1) / 6) * plotW;
+              let y = 100;
+              // Stack vertically to avoid overlap
+              for (let dy = 0; dy < 80; dy += 22) {
+                const candidate1 = 100 - dy;
+                const candidate2 = 100 + dy;
+                for (const cy of [candidate1, candidate2]) {
+                  const overlaps = placed.some(
+                    (pl) => Math.sqrt((pl.x - x) ** 2 + (pl.y - cy) ** 2) < 20,
+                  );
+                  if (!overlaps) {
+                    y = cy;
+                    break;
+                  }
+                }
+                if (y !== 100 || dy === 0) break;
+              }
+              placed.push({ x, y });
+              return { ...p, x, y };
+            });
+            return (
+              <div className="overflow-x-auto">
+                <svg
+                  width={W}
+                  height={H + 40}
+                  viewBox={`0 0 ${W} ${H + 40}`}
+                  style={{ minWidth: W }}
+                  aria-hidden="true"
+                >
+                  {/* Zone backgrounds */}
+                  <rect
+                    x={PAD}
+                    y={20}
+                    width={plotW * 0.43}
+                    height={H - 40}
+                    fill="rgba(205,92,92,0.08)"
+                    rx={4}
+                  />
+                  <rect
+                    x={PAD + plotW * 0.43}
+                    y={20}
+                    width={plotW * 0.27}
+                    height={H - 40}
+                    fill="rgba(200,162,74,0.08)"
+                    rx={4}
+                  />
+                  <rect
+                    x={PAD + plotW * 0.7}
+                    y={20}
+                    width={plotW * 0.3}
+                    height={H - 40}
+                    fill="rgba(45,158,90,0.08)"
+                    rx={4}
+                  />
+                  {/* Zone labels */}
+                  <text
+                    x={PAD + plotW * 0.215}
+                    y={36}
+                    textAnchor="middle"
+                    fill="rgba(205,92,92,0.7)"
+                    fontSize={10}
+                    fontWeight="bold"
+                  >
+                    REACTIVE ZONE
+                  </text>
+                  <text
+                    x={PAD + plotW * 0.565}
+                    y={36}
+                    textAnchor="middle"
+                    fill="rgba(200,162,74,0.7)"
+                    fontSize={10}
+                    fontWeight="bold"
+                  >
+                    DEVELOPING ZONE
+                  </text>
+                  <text
+                    x={PAD + plotW * 0.85}
+                    y={36}
+                    textAnchor="middle"
+                    fill="rgba(45,158,90,0.7)"
+                    fontSize={10}
+                    fontWeight="bold"
+                  >
+                    SOVEREIGN ZONE
+                  </text>
+                  {/* Axis */}
+                  <line
+                    x1={PAD}
+                    y1={H}
+                    x2={W - PAD}
+                    y2={H}
+                    stroke="rgba(255,255,255,0.15)"
+                    strokeWidth={1}
+                  />
+                  {[1, 2, 3, 4, 5, 6, 7].map((v) => (
+                    <g key={v}>
+                      <line
+                        x1={PAD + ((v - 1) / 6) * plotW}
+                        y1={H}
+                        x2={PAD + ((v - 1) / 6) * plotW}
+                        y2={H + 6}
+                        stroke="rgba(255,255,255,0.2)"
+                        strokeWidth={1}
+                      />
+                      <text
+                        x={PAD + ((v - 1) / 6) * plotW}
+                        y={H + 18}
+                        textAnchor="middle"
+                        fill="rgba(255,255,255,0.3)"
+                        fontSize={9}
+                      >
+                        {v}.0
+                      </text>
+                    </g>
+                  ))}
+                  {/* Circles */}
+                  {circles.map((c, i) => (
+                    <g
+                      key={c.name}
+                      style={{
+                        animation: `dropIn 0.5s ease-out ${i * 0.04}s both`,
+                      }}
+                    >
+                      <style>
+                        {
+                          "@keyframes dropIn { from { transform: translateY(-40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }"
+                        }
+                      </style>
+                      <circle
+                        cx={c.x}
+                        cy={c.y}
+                        r={10}
+                        fill={ARCHETYPE_COLORS[c.archetype] || GOLD}
+                        fillOpacity={0.8}
+                      />
+                      <text
+                        x={c.x}
+                        y={c.y + 4}
+                        textAnchor="middle"
+                        fill="white"
+                        fontSize={7}
+                        fontWeight="bold"
+                      >
+                        {c.name
+                          .split(" ")
+                          .map((w: string) => w[0])
+                          .join("")
+                          .slice(0, 2)}
+                      </text>
+                    </g>
+                  ))}
+                  <text
+                    x={PAD}
+                    y={H + 34}
+                    fill="rgba(255,255,255,0.25)"
+                    fontSize={9}
+                  >
+                    Low (1.0)
+                  </text>
+                  <text
+                    x={W - PAD}
+                    y={H + 34}
+                    textAnchor="end"
+                    fill="rgba(255,255,255,0.25)"
+                    fontSize={9}
+                  >
+                    High (7.0)
+                  </text>
+                </svg>
+              </div>
+            );
+          })()}
+          <div className="flex flex-wrap gap-4 mt-4">
+            {[
+              {
+                label: "Reactive Zone (1–3)",
+                color: "rgba(205,92,92,0.8)",
+                count: 4,
+              },
+              { label: "Developing Zone (3–5)", color: GOLD, count: 11 },
+              { label: "Sovereign Zone (5–7)", color: "#50C878", count: 20 },
+            ].map((z) => (
+              <div
+                key={z.label}
+                className="flex items-center gap-2 text-xs text-white/60"
+              >
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: z.color }}
+                />
+                {z.label}{" "}
+                <span className="font-bold" style={{ color: z.color }}>
+                  {z.count} profiles
+                </span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        {/* Section 25: Neural Decision Network */}
+        <SectionCard
+          number="25"
+          title="Neural Decision Network — How Dimensions Interconnect"
+        >
+          <p className="text-white/60 text-sm mb-6">
+            The DCFM model reveals powerful hidden correlations between
+            cognitive dimensions. Strong positive links (gold) indicate
+            synergistic pathways; negative correlations (red dashed) reveal
+            productive tensions that sharpen decision quality.
+          </p>
+          <NeuralDecisionNetwork demoProfiles={DEMO_PROFILES} />
+        </SectionCard>
+
+        {/* Section 26: Decision Confidence Gauge */}
+        <SectionCard
+          number="26"
+          title="Decision Confidence Gauge — Cohort Intelligence Level"
+        >
+          <p className="text-white/60 text-sm mb-6">
+            The NovaMind Corp cohort aggregate Decision Force Level, rendered as
+            a live cognitive speedometer. At 7.2/10, the organization sits
+            firmly in the Sovereign Zone — the top 18% of assessed teams
+            globally.
+          </p>
+          <DecisionGauge />
+        </SectionCard>
+
+        {/* Section 27: Temporal Intelligence Evolution */}
+        <SectionCard
+          number="27"
+          title="Temporal Intelligence Evolution — 90-Day Mind Twin Growth"
+        >
+          <p className="text-white/60 text-sm mb-6">
+            Three profiles tracked across 90 days of consistent Mind Twin
+            training. The DCFM model detects not just score improvement but
+            qualitative shifts in decision architecture — marking the transition
+            from one archetype tier to the next.
+          </p>
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart
+              data={[
+                {
+                  day: "Day 1",
+                  arjun_pm: 5.0,
+                  arjun_iai: 5.2,
+                  arjun_edi: 5.8,
+                  priya_em: 5.5,
+                  priya_sis: 6.0,
+                  priya_rrm: 3.0,
+                  yuki_edi: 4.5,
+                  yuki_pm: 6.0,
+                  yuki_rrm: 5.5,
+                },
+                {
+                  day: "Day 15",
+                  arjun_pm: 5.4,
+                  arjun_iai: 5.6,
+                  arjun_edi: 6.0,
+                  priya_em: 5.0,
+                  priya_sis: 6.2,
+                  priya_rrm: 3.4,
+                  yuki_edi: 5.1,
+                  yuki_pm: 6.2,
+                  yuki_rrm: 5.8,
+                },
+                {
+                  day: "Day 30",
+                  arjun_pm: 5.9,
+                  arjun_iai: 5.9,
+                  arjun_edi: 6.3,
+                  priya_em: 4.5,
+                  priya_sis: 6.5,
+                  priya_rrm: 3.8,
+                  yuki_edi: 5.6,
+                  yuki_pm: 6.5,
+                  yuki_rrm: 6.2,
+                },
+                {
+                  day: "Day 45",
+                  arjun_pm: 6.2,
+                  arjun_iai: 6.1,
+                  arjun_edi: 6.5,
+                  priya_em: 4.0,
+                  priya_sis: 6.7,
+                  priya_rrm: 4.2,
+                  yuki_edi: 6.0,
+                  yuki_pm: 6.7,
+                  yuki_rrm: 6.5,
+                },
+                {
+                  day: "Day 60",
+                  arjun_pm: 6.5,
+                  arjun_iai: 6.3,
+                  arjun_edi: 6.8,
+                  priya_em: 3.5,
+                  priya_sis: 6.9,
+                  priya_rrm: 4.6,
+                  yuki_edi: 6.5,
+                  yuki_pm: 6.8,
+                  yuki_rrm: 6.8,
+                },
+                {
+                  day: "Day 90",
+                  arjun_pm: 6.8,
+                  arjun_iai: 6.5,
+                  arjun_edi: 7.0,
+                  priya_em: 3.2,
+                  priya_sis: 7.0,
+                  priya_rrm: 5.0,
+                  yuki_edi: 7.2,
+                  yuki_pm: 7.0,
+                  yuki_rrm: 7.2,
+                },
+              ]}
+              margin={{ top: 5, right: 20, bottom: 5, left: 0 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.08)"
+              />
+              <XAxis
+                dataKey="day"
+                tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }}
+              />
+              <YAxis
+                domain={[2.5, 7.5]}
+                tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend
+                wrapperStyle={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}
+              />
+              <Line
+                type="monotone"
+                dataKey="arjun_pm"
+                name="Arjun: PM"
+                stroke={GOLD}
+                strokeWidth={2}
+                dot={false}
+                isAnimationActive={true}
+              />
+              <Line
+                type="monotone"
+                dataKey="arjun_iai"
+                name="Arjun: IAI"
+                stroke={GOLD}
+                strokeWidth={1.5}
+                strokeDasharray="5 3"
+                dot={false}
+                isAnimationActive={true}
+              />
+              <Line
+                type="monotone"
+                dataKey="arjun_edi"
+                name="Arjun: EDI"
+                stroke={GOLD}
+                strokeWidth={1.5}
+                strokeDasharray="2 2"
+                dot={false}
+                isAnimationActive={true}
+              />
+              <Line
+                type="monotone"
+                dataKey="priya_em"
+                name="Priya: EM"
+                stroke="#7B9FC7"
+                strokeWidth={2}
+                dot={false}
+                isAnimationActive={true}
+              />
+              <Line
+                type="monotone"
+                dataKey="priya_sis"
+                name="Priya: SIS"
+                stroke="#7B9FC7"
+                strokeWidth={1.5}
+                strokeDasharray="5 3"
+                dot={false}
+                isAnimationActive={true}
+              />
+              <Line
+                type="monotone"
+                dataKey="yuki_edi"
+                name="Yuki: EDI"
+                stroke="#82B89A"
+                strokeWidth={2}
+                dot={false}
+                isAnimationActive={true}
+              />
+              <Line
+                type="monotone"
+                dataKey="yuki_pm"
+                name="Yuki: PM"
+                stroke="#82B89A"
+                strokeWidth={1.5}
+                strokeDasharray="5 3"
+                dot={false}
+                isAnimationActive={true}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            {[
+              {
+                name: "Arjun Mehta 🇮🇳",
+                color: GOLD,
+                headline: "PM +1.8 in 90 days",
+                delta: "PM: 5.0 → 6.8 · IAI: 5.2 → 6.5 · EDI: 5.8 → 7.0",
+                shift: "Adaptive Harmonizer → Sovereign Navigator",
+                insight:
+                  "Structured process discipline unlocked executive clarity. PM growth was the gateway that elevated all other dimensions.",
+              },
+              {
+                name: "Priya Sharma 🇮🇳",
+                color: "#7B9FC7",
+                headline: "EM regulated by −2.3",
+                delta: "EM: 5.5 → 3.2 · SIS: 6.0 → 7.0 · RRM: 3.0 → 5.0",
+                shift: "Reactive Empath → Empathic Sentinel",
+                insight:
+                  "Emotional regulation training transformed social influence from a reactive liability into a strategic asset.",
+              },
+              {
+                name: "Yuki Tanaka 🇯🇵",
+                color: "#82B89A",
+                headline: "EDI surged +2.7",
+                delta: "EDI: 4.5 → 7.2 · PM: 6.0 → 7.0 · RRM: 5.5 → 7.2",
+                shift: "Decisive Executor → Sovereign Navigator",
+                insight:
+                  "Execution intelligence training at top tier opened new decision pathways — fastest archetype upgrade in the cohort.",
+              },
+            ].map((c) => (
+              <div
+                key={c.name}
+                className="rounded-xl p-5"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.04)",
+                  border: `1px solid ${c.color}30`,
+                }}
+              >
+                <div
+                  className="font-bold text-sm mb-1"
+                  style={{ color: c.color }}
+                >
+                  {c.name}
+                </div>
+                <div className="text-lg font-bold text-white mb-1">
+                  {c.headline}
+                </div>
+                <div className="text-xs text-white/40 mb-2 font-mono">
+                  {c.delta}
+                </div>
+                <div
+                  className="text-xs px-2 py-1 rounded-full inline-block mb-3"
+                  style={{
+                    backgroundColor: `${c.color}15`,
+                    color: c.color,
+                    border: `1px solid ${c.color}30`,
+                  }}
+                >
+                  {c.shift}
+                </div>
+                <p className="text-xs text-white/50 leading-relaxed">
+                  {c.insight}
+                </p>
+              </div>
+            ))}
           </div>
         </SectionCard>
 

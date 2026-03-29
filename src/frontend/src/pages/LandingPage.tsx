@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
 import { Footer } from "../components/Footer";
 
 const DIMENSIONS = [
@@ -7,36 +8,48 @@ const DIMENSIONS = [
     name: "Process Management",
     color: "#C8A24A",
     desc: "Structured, systematic approaches to decision-making workflows that ensure consistency and rigor across high-stakes choices.",
+    brainInsight:
+      "Pattern recognition activates the prefrontal cortex during structured decision flows, reinforcing systematic judgment pathways.",
   },
   {
     abbr: "EM",
     name: "Emotional Management",
     color: "#7B9FC7",
     desc: "Regulation of emotional states to enable clear judgment and leverage self-awareness as a strategic decision asset.",
+    brainInsight:
+      "Amygdala modulation through conscious reappraisal keeps emotional reactivity from hijacking executive function.",
   },
   {
     abbr: "RRM",
     name: "Risk & Reward Management",
     color: "#82B89A",
     desc: "Calibrated assessment of uncertainty versus opportunity, with sophisticated scenario-planning and tolerance thresholds.",
+    brainInsight:
+      "The anterior insula integrates somatic signals with the orbitofrontal cortex to calibrate risk-reward calculus.",
   },
   {
     abbr: "IAI",
     name: "Information & Analytical Intelligence",
     color: "#C4A882",
     desc: "Data gathering, synthesis, and analytical reasoning that reduces cognitive bias and elevates decision quality.",
+    brainInsight:
+      "Dorsolateral prefrontal activation drives analytical depth, suppressing confirmation bias via working-memory gating.",
   },
   {
     abbr: "SIS",
     name: "Social & Interpersonal Skills",
     color: "#A688C4",
     desc: "Leveraging relationships, stakeholder dynamics, and collaborative intelligence to reach better collective decisions.",
+    brainInsight:
+      "Mirror neuron networks in the inferior frontal gyrus enable real-time social signal decoding during group decisions.",
   },
   {
     abbr: "EDI",
     name: "Executive Decision Intelligence",
     color: "#E08A7A",
     desc: "Strategic thinking, high-stakes decision execution, and full accountability for outcomes at the highest levels.",
+    brainInsight:
+      "Superior prefrontal-thalamic circuits sustain strategic intent under high-stakes cognitive load and uncertainty.",
   },
 ];
 
@@ -67,6 +80,735 @@ const SAMPLE_SCORES = [
   { dimension: "EDI", score: 5.6 },
 ];
 
+const STATS = [
+  { value: 35, suffix: "+", label: "Profiles Analyzed" },
+  { value: 6, suffix: "", label: "Decision Dimensions" },
+  { value: 10, suffix: "", label: "Archetypes Classified" },
+  { value: 150, suffix: "+", label: "Team Members Mapped" },
+];
+
+// ─── DCFM Particle Field Canvas ─────────────────────────────────────────────
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  r: number;
+}
+
+function DCFMParticleField() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particlesRef = useRef<Particle[]>([]);
+  const rafRef = useRef<number>(0);
+  const sizeRef = useRef({ w: 480, h: 400 });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const init = (w: number, h: number) => {
+      sizeRef.current = { w, h };
+      canvas.width = w;
+      canvas.height = h;
+      particlesRef.current = Array.from({ length: 60 }, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: (Math.random() - 0.5) * 0.6,
+        r: Math.random() * 2.5 + 1,
+      }));
+    };
+
+    init(480, 400);
+
+    const draw = () => {
+      const { w, h } = sizeRef.current;
+      ctx.clearRect(0, 0, w, h);
+
+      const pts = particlesRef.current;
+      // Update
+      for (const p of pts) {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > w) p.vx *= -1;
+        if (p.y < 0 || p.y > h) p.vy *= -1;
+        // Clamp
+        p.x = Math.max(0, Math.min(w, p.x));
+        p.y = Math.max(0, Math.min(h, p.y));
+      }
+
+      // Draw connections
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          const dx = pts[i].x - pts[j].x;
+          const dy = pts[i].y - pts[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 80) {
+            ctx.beginPath();
+            ctx.moveTo(pts[i].x, pts[i].y);
+            ctx.lineTo(pts[j].x, pts[j].y);
+            ctx.strokeStyle = `rgba(200,162,74,${0.15 * (1 - dist / 80)})`;
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Draw particles
+      for (const p of pts) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(200,162,74,0.6)";
+        ctx.fill();
+      }
+
+      rafRef.current = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width } = entry.contentRect;
+        const w = Math.min(width, 480);
+        const h = Math.round(w * (400 / 480));
+        init(w, h);
+      }
+    });
+    ro.observe(canvas.parentElement!);
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      ro.disconnect();
+    };
+  }, []);
+
+  return (
+    <div
+      className="relative w-full max-w-md mx-auto"
+      style={{ aspectRatio: "480/400" }}
+    >
+      <canvas
+        ref={canvasRef}
+        style={{ width: "100%", height: "100%", display: "block" }}
+      />
+      {/* Overlay text */}
+      <div
+        className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+        style={{ userSelect: "none" }}
+      >
+        <div
+          className="text-6xl font-bold tracking-wider"
+          style={{
+            color: "#C8A24A",
+            fontFamily: "Playfair Display, serif",
+            textShadow: "0 0 30px rgba(200,162,74,0.5)",
+          }}
+        >
+          DCFM
+        </div>
+        <div
+          className="text-xs tracking-[0.2em] uppercase mt-2 text-center px-4"
+          style={{ color: "rgba(200,162,74,0.7)" }}
+        >
+          Dynamic Cognitive Field Manifold
+        </div>
+        <div
+          className="mt-4 px-3 py-1 rounded-full text-xs"
+          style={{
+            backgroundColor: "rgba(200,162,74,0.1)",
+            color: "rgba(200,162,74,0.6)",
+            border: "1px solid rgba(200,162,74,0.2)",
+          }}
+        >
+          Patent Pending · Sathish Sampath &amp; MESMA
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Stats Counter ────────────────────────────────────────────────────────────
+function useCountUp(target: number, duration = 1800, active = false) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    let start = 0;
+    const startTime = performance.now();
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - (1 - progress) ** 3;
+      const current = Math.round(eased * target);
+      if (current !== start) {
+        setCount(current);
+        start = current;
+      }
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [target, duration, active]);
+  return count;
+}
+
+function StatItem({
+  stat,
+  active,
+}: { stat: (typeof STATS)[0]; active: boolean }) {
+  const count = useCountUp(stat.value, 1800, active);
+  return (
+    <div
+      className="flex flex-col items-center text-center px-6"
+      style={{
+        borderBottom: "2px solid rgba(200,162,74,0.4)",
+        paddingBottom: "1.5rem",
+      }}
+    >
+      <span
+        className="text-5xl font-bold"
+        style={{ color: "#C8A24A", fontFamily: "Playfair Display, serif" }}
+      >
+        {count}
+        {stat.suffix}
+      </span>
+      <span
+        className="text-xs tracking-widest uppercase mt-2"
+        style={{ color: "rgba(255,255,255,0.5)" }}
+      >
+        {stat.label}
+      </span>
+    </div>
+  );
+}
+
+function StatsCounterRow() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setActive(true);
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section
+      ref={ref}
+      style={{
+        background:
+          "linear-gradient(135deg, #061218 0%, #081C2F 50%, #0a1f10 100%)",
+        borderTop: "1px solid rgba(200,162,74,0.15)",
+        borderBottom: "1px solid rgba(200,162,74,0.15)",
+      }}
+    >
+      <div className="max-w-5xl mx-auto px-6 py-16">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-8"
+        >
+          {STATS.map((s) => (
+            <StatItem key={s.label} stat={s} active={active} />
+          ))}
+        </motion.div>
+        <div className="mt-8 text-center">
+          <p
+            className="text-xs tracking-[0.25em] uppercase"
+            style={{ color: "rgba(200,162,74,0.45)" }}
+          >
+            Powered by the Dynamic Cognitive Field Manifold · Patent Pending
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Brain Neural Map ─────────────────────────────────────────────────────────
+const BRAIN_REGIONS = [
+  {
+    abbr: "PM",
+    name: "Process Management",
+    color: "#C8A24A",
+    cx: 260,
+    cy: 110,
+    r: 28,
+  },
+  {
+    abbr: "EM",
+    name: "Emotional Management",
+    color: "#7B9FC7",
+    cx: 170,
+    cy: 155,
+    r: 26,
+  },
+  {
+    abbr: "RRM",
+    name: "Risk & Reward",
+    color: "#82B89A",
+    cx: 340,
+    cy: 170,
+    r: 26,
+  },
+  {
+    abbr: "IAI",
+    name: "Analytical Intel.",
+    color: "#C4A882",
+    cx: 210,
+    cy: 235,
+    r: 27,
+  },
+  {
+    abbr: "SIS",
+    name: "Social Skills",
+    color: "#A688C4",
+    cx: 310,
+    cy: 250,
+    r: 25,
+  },
+  {
+    abbr: "EDI",
+    name: "Executive Intel.",
+    color: "#E08A7A",
+    cx: 260,
+    cy: 300,
+    r: 29,
+  },
+];
+
+const SYNAPSES = [
+  { x1: 260, y1: 110, x2: 170, y2: 155 },
+  { x1: 260, y1: 110, x2: 340, y2: 170 },
+  { x1: 170, y1: 155, x2: 210, y2: 235 },
+  { x1: 340, y1: 170, x2: 310, y2: 250 },
+  { x1: 210, y1: 235, x2: 310, y2: 250 },
+  { x1: 210, y1: 235, x2: 260, y2: 300 },
+  { x1: 310, y1: 250, x2: 260, y2: 300 },
+  { x1: 260, y1: 110, x2: 210, y2: 235 },
+  { x1: 170, y1: 155, x2: 310, y2: 250 },
+];
+
+function BrainNeuralMap() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setVisible(true);
+      },
+      { threshold: 0.2 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section
+      style={{
+        background: "linear-gradient(180deg, #061218 0%, #081C2F 100%)",
+      }}
+      className="py-24"
+    >
+      <div className="max-w-7xl mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-16"
+        >
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
+            style={{
+              backgroundColor: "rgba(200,162,74,0.1)",
+              color: "#C8A24A",
+              border: "1px solid rgba(200,162,74,0.25)",
+            }}
+          >
+            🧠 Neuroscience Foundation
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-4">
+            The Neural Architecture of Decision Intelligence
+          </h2>
+          <p className="text-white/50 max-w-xl mx-auto">
+            DCFM maps decision pathways across 6 distinct cognitive regions,
+            mirroring how the brain actually processes high-stakes choices at
+            the neurological level.
+          </p>
+        </motion.div>
+
+        <div
+          ref={ref}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center"
+        >
+          {/* SVG Brain */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            className="flex items-center justify-center"
+          >
+            <div className="relative">
+              <svg
+                width="500"
+                height="380"
+                viewBox="0 0 500 380"
+                className="w-full max-w-lg"
+                aria-hidden="true"
+              >
+                {/* CSS animations */}
+                <defs>
+                  <style>{`
+                    @keyframes neural-dash {
+                      0% { stroke-dashoffset: 200; }
+                      100% { stroke-dashoffset: 0; }
+                    }
+                    @keyframes pulse-node {
+                      0%, 100% { transform: scale(1); }
+                      50% { transform: scale(1.15); }
+                    }
+                    @keyframes glow-pulse {
+                      0%, 100% { opacity: 0.4; }
+                      50% { opacity: 0.9; }
+                    }
+                    .synapse-path {
+                      stroke-dasharray: 8 5;
+                      stroke-dashoffset: 200;
+                      animation: neural-dash 2s linear infinite;
+                    }
+                    .brain-node {
+                      transform-box: fill-box;
+                      transform-origin: center;
+                    }
+                    .brain-node.active {
+                      animation: pulse-node 2.5s ease-in-out infinite;
+                    }
+                    .glow-ring {
+                      animation: glow-pulse 2.5s ease-in-out infinite;
+                    }
+                  `}</style>
+                  <radialGradient id="bg-grad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="rgba(45,106,79,0.12)" />
+                    <stop offset="100%" stopColor="rgba(6,18,24,0)" />
+                  </radialGradient>
+                  {BRAIN_REGIONS.map((reg) => (
+                    <radialGradient
+                      key={`grd-${reg.abbr}`}
+                      id={`grd-${reg.abbr}`}
+                      cx="50%"
+                      cy="50%"
+                      r="50%"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor={reg.color}
+                        stopOpacity="0.9"
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor={reg.color}
+                        stopOpacity="0.3"
+                      />
+                    </radialGradient>
+                  ))}
+                </defs>
+
+                {/* Background glow */}
+                <ellipse
+                  cx="250"
+                  cy="200"
+                  rx="220"
+                  ry="160"
+                  fill="url(#bg-grad)"
+                />
+
+                {/* Brain outline - stylized side profile */}
+                <path
+                  d="M 100 240 C 80 200 75 160 90 130 C 105 100 130 80 160 72 C 185 65 210 70 230 65 C 255 58 280 48 310 52 C 345 57 375 78 390 108 C 408 142 408 180 400 210 C 392 238 375 260 355 272 C 335 285 310 288 285 285 C 270 283 258 278 248 280 C 238 282 228 290 215 292 C 195 296 172 290 158 278 C 140 263 118 255 100 240 Z"
+                  fill="none"
+                  stroke="rgba(200,162,74,0.2)"
+                  strokeWidth="2"
+                />
+                {/* Inner brain folds */}
+                <path
+                  d="M 160 130 C 180 120 200 125 215 140"
+                  fill="none"
+                  stroke="rgba(200,162,74,0.1)"
+                  strokeWidth="1.5"
+                />
+                <path
+                  d="M 215 140 C 230 155 225 170 210 178"
+                  fill="none"
+                  stroke="rgba(200,162,74,0.1)"
+                  strokeWidth="1.5"
+                />
+                <path
+                  d="M 280 120 C 300 112 320 118 330 135"
+                  fill="none"
+                  stroke="rgba(200,162,74,0.1)"
+                  strokeWidth="1.5"
+                />
+                <path
+                  d="M 200 200 C 215 190 235 195 245 210"
+                  fill="none"
+                  stroke="rgba(200,162,74,0.08)"
+                  strokeWidth="1.5"
+                />
+                <path
+                  d="M 300 200 C 320 192 340 198 348 215"
+                  fill="none"
+                  stroke="rgba(200,162,74,0.08)"
+                  strokeWidth="1.5"
+                />
+
+                {/* Synapse pathways */}
+                {SYNAPSES.map((s, i) => (
+                  <line
+                    key={`${s.x1}-${s.y1}-${s.x2}-${s.y2}`}
+                    x1={s.x1}
+                    y1={s.y1}
+                    x2={s.x2}
+                    y2={s.y2}
+                    stroke="rgba(200,162,74,0.25)"
+                    strokeWidth="1"
+                    className="synapse-path"
+                    style={{ animationDelay: `${i * 0.3}s` }}
+                  />
+                ))}
+
+                {/* Glow rings */}
+                {BRAIN_REGIONS.map((reg) => (
+                  <circle
+                    key={`glow-${reg.abbr}`}
+                    cx={reg.cx}
+                    cy={reg.cy}
+                    r={reg.r + 10}
+                    fill="none"
+                    stroke={reg.color}
+                    strokeWidth="1"
+                    className="glow-ring"
+                    style={{
+                      animationDelay: `${BRAIN_REGIONS.indexOf(reg) * 0.4}s`,
+                    }}
+                  />
+                ))}
+
+                {/* Brain region nodes */}
+                {BRAIN_REGIONS.map((reg) => (
+                  <g
+                    key={reg.abbr}
+                    className={`brain-node ${visible ? "active" : ""}`}
+                    style={{
+                      animationDelay: `${BRAIN_REGIONS.indexOf(reg) * 0.35}s`,
+                    }}
+                  >
+                    <circle
+                      cx={reg.cx}
+                      cy={reg.cy}
+                      r={reg.r}
+                      fill={`url(#grd-${reg.abbr})`}
+                    />
+                    <circle
+                      cx={reg.cx}
+                      cy={reg.cy}
+                      r={reg.r}
+                      fill="none"
+                      stroke={reg.color}
+                      strokeWidth="1.5"
+                    />
+                    <text
+                      x={reg.cx}
+                      y={reg.cy + 5}
+                      textAnchor="middle"
+                      fill="white"
+                      fontSize="10"
+                      fontWeight="bold"
+                      fontFamily="Plus Jakarta Sans, sans-serif"
+                    >
+                      {reg.abbr}
+                    </text>
+                  </g>
+                ))}
+
+                {/* Callout lines + labels */}
+                <line
+                  x1="260"
+                  y1="82"
+                  x2="260"
+                  y2="52"
+                  stroke="rgba(200,162,74,0.3)"
+                  strokeWidth="1"
+                />
+                <text
+                  x="260"
+                  y="46"
+                  textAnchor="middle"
+                  fill="#C8A24A"
+                  fontSize="9"
+                  fontFamily="Plus Jakarta Sans, sans-serif"
+                >
+                  Process Mgmt
+                </text>
+
+                <line
+                  x1="142"
+                  y1="155"
+                  x2="110"
+                  y2="155"
+                  stroke="rgba(123,159,199,0.4)"
+                  strokeWidth="1"
+                />
+                <text
+                  x="105"
+                  y="151"
+                  textAnchor="end"
+                  fill="#7B9FC7"
+                  fontSize="9"
+                  fontFamily="Plus Jakarta Sans, sans-serif"
+                >
+                  Emotion
+                </text>
+
+                <line
+                  x1="366"
+                  y1="170"
+                  x2="400"
+                  y2="155"
+                  stroke="rgba(130,184,154,0.4)"
+                  strokeWidth="1"
+                />
+                <text
+                  x="405"
+                  y="151"
+                  textAnchor="start"
+                  fill="#82B89A"
+                  fontSize="9"
+                  fontFamily="Plus Jakarta Sans, sans-serif"
+                >
+                  Risk/Reward
+                </text>
+
+                <line
+                  x1="183"
+                  y1="250"
+                  x2="145"
+                  y2="260"
+                  stroke="rgba(196,168,130,0.4)"
+                  strokeWidth="1"
+                />
+                <text
+                  x="140"
+                  y="256"
+                  textAnchor="end"
+                  fill="#C4A882"
+                  fontSize="9"
+                  fontFamily="Plus Jakarta Sans, sans-serif"
+                >
+                  Analytics
+                </text>
+
+                <line
+                  x1="335"
+                  y1="260"
+                  x2="375"
+                  y2="268"
+                  stroke="rgba(166,136,196,0.4)"
+                  strokeWidth="1"
+                />
+                <text
+                  x="380"
+                  y="264"
+                  textAnchor="start"
+                  fill="#A688C4"
+                  fontSize="9"
+                  fontFamily="Plus Jakarta Sans, sans-serif"
+                >
+                  Social
+                </text>
+
+                <line
+                  x1="260"
+                  y1="329"
+                  x2="260"
+                  y2="355"
+                  stroke="rgba(224,138,122,0.4)"
+                  strokeWidth="1"
+                />
+                <text
+                  x="260"
+                  y="365"
+                  textAnchor="middle"
+                  fill="#E08A7A"
+                  fontSize="9"
+                  fontFamily="Plus Jakarta Sans, sans-serif"
+                >
+                  Executive Intel.
+                </text>
+              </svg>
+            </div>
+          </motion.div>
+
+          {/* Dimension insight cards */}
+          <div className="space-y-3">
+            {DIMENSIONS.map((dim, i) => (
+              <motion.div
+                key={dim.abbr}
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: i * 0.08 }}
+                className="flex items-start gap-3 rounded-xl p-4"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.04)",
+                  border: `1px solid ${dim.color}25`,
+                }}
+              >
+                <span
+                  className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold"
+                  style={{
+                    backgroundColor: `${dim.color}20`,
+                    color: dim.color,
+                    border: `1px solid ${dim.color}40`,
+                  }}
+                >
+                  {dim.abbr}
+                </span>
+                <div>
+                  <div
+                    className="text-xs font-bold mb-1"
+                    style={{ color: dim.color }}
+                  >
+                    {dim.name}
+                  </div>
+                  <p className="text-xs text-white/50 leading-relaxed">
+                    {dim.brainInsight}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Static Radar Chart ───────────────────────────────────────────────────────
 function StaticRadarChart() {
   const cx = 160;
   const cy = 160;
@@ -161,6 +903,7 @@ function StaticRadarChart() {
   );
 }
 
+// ─── Landing Page ─────────────────────────────────────────────────────────────
 interface LandingPageProps {
   onNavigate: (page: string) => void;
 }
@@ -211,15 +954,6 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               stroke="#C8A24A"
               strokeWidth="1"
             />
-          </svg>
-          <svg
-            className="absolute top-1/2 left-1/4 opacity-10"
-            width="80"
-            height="80"
-            viewBox="0 0 80 80"
-            aria-hidden="true"
-          >
-            <polygon points="40,2 75,21 75,59 40,78 5,59 5,21" fill="#C8A24A" />
           </svg>
         </div>
 
@@ -290,161 +1024,21 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               </div>
             </motion.div>
 
-            {/* Right: illustration */}
+            {/* Right: DCFM Particle Field */}
             <motion.div
               initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.7, delay: 0.2 }}
               className="relative flex items-center justify-center"
             >
-              <svg
-                width="480"
-                height="400"
-                viewBox="0 0 480 400"
-                className="w-full max-w-md"
-                aria-hidden="true"
-              >
-                <rect
-                  x="60"
-                  y="40"
-                  width="340"
-                  height="240"
-                  rx="16"
-                  fill="#0D3358"
-                  stroke="rgba(200,162,74,0.3)"
-                  strokeWidth="1.5"
-                />
-                <rect
-                  x="60"
-                  y="40"
-                  width="340"
-                  height="40"
-                  rx="16"
-                  fill="rgba(200,162,74,0.12)"
-                />
-                <rect
-                  x="60"
-                  y="64"
-                  width="340"
-                  height="16"
-                  fill="rgba(200,162,74,0.12)"
-                />
-                <circle cx="85" cy="62" r="5" fill="#E08A7A" opacity="0.8" />
-                <circle cx="103" cy="62" r="5" fill="#C8A24A" opacity="0.8" />
-                <circle cx="121" cy="62" r="5" fill="#82B89A" opacity="0.8" />
-                <text
-                  x="155"
-                  y="66"
-                  fill="white"
-                  fontSize="11"
-                  fontWeight="600"
-                  fontFamily="Plus Jakarta Sans"
-                >
-                  Decision Intelligence Dashboard
-                </text>
-                <g transform="translate(130,160)">
-                  {[1, 2, 3].map((l) => (
-                    <polygon
-                      key={l}
-                      points={`0,${-l * 28} ${l * 24.2},${-l * 14} ${l * 24.2},${l * 14} 0,${l * 28} ${-l * 24.2},${l * 14} ${-l * 24.2},${-l * 14}`}
-                      fill="none"
-                      stroke="#C8A24A"
-                      strokeOpacity={0.2}
-                      strokeWidth={1}
-                    />
-                  ))}
-                  <polygon
-                    points="0,-62 40,-18 30,40 -22,50 -50,5 -25,-55"
-                    fill="#C8A24A"
-                    fillOpacity={0.25}
-                    stroke="#C8A24A"
-                    strokeWidth={2}
-                  />
-                  {[
-                    [-0, -62],
-                    [40, -18],
-                    [30, 40],
-                    [-22, 50],
-                    [-50, 5],
-                    [-25, -55],
-                  ].map(([px, py]) => (
-                    <circle
-                      key={String(px) + String(py)}
-                      cx={px}
-                      cy={py}
-                      r={3}
-                      fill="#C8A24A"
-                    />
-                  ))}
-                </g>
-                {["PM", "EM", "RRM", "IAI", "SIS", "EDI"].map((d, i) => (
-                  <g key={d}>
-                    <text
-                      x="290"
-                      y={110 + i * 22}
-                      fill="#B9C3CF"
-                      fontSize="9"
-                      fontFamily="Plus Jakarta Sans"
-                    >
-                      {d}
-                    </text>
-                    <rect
-                      x="315"
-                      y={100 + i * 22}
-                      width={50}
-                      height="8"
-                      rx="4"
-                      fill="rgba(200,162,74,0.1)"
-                    />
-                    <rect
-                      x="315"
-                      y={100 + i * 22}
-                      width={[38, 32, 40, 44, 28, 41][i]}
-                      height="8"
-                      rx="4"
-                      fill="#C8A24A"
-                      opacity="0.7"
-                    />
-                  </g>
-                ))}
-                <circle
-                  cx="240"
-                  cy="330"
-                  r="24"
-                  fill="rgba(200,162,74,0.15)"
-                  stroke="#C8A24A"
-                  strokeWidth="1.5"
-                />
-                <circle
-                  cx="240"
-                  cy="322"
-                  r="10"
-                  fill="rgba(200,162,74,0.3)"
-                  stroke="#C8A24A"
-                  strokeWidth="1.5"
-                />
-                <polygon
-                  points="420,70 440,82 440,106 420,118 400,106 400,82"
-                  fill="none"
-                  stroke="#C8A24A"
-                  strokeWidth="1.5"
-                  opacity="0.6"
-                />
-                <polygon
-                  points="40,200 55,209 55,227 40,236 25,227 25,209"
-                  fill="#C8A24A"
-                  opacity="0.25"
-                />
-                <polygon
-                  points="430,250 445,259 445,277 430,286 415,277 415,259"
-                  fill="#C8A24A"
-                  opacity="0.2"
-                />
-              </svg>
+              <DCFMParticleField />
             </motion.div>
           </div>
         </div>
       </section>
+
+      {/* Stats Counter Row */}
+      <StatsCounterRow />
 
       {/* How It Works */}
       <section className="py-24 bg-white">
@@ -653,6 +1247,9 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           </div>
         </div>
       </section>
+
+      {/* Brain Neural Map */}
+      <BrainNeuralMap />
 
       {/* The Mind Behind elidi */}
       <section

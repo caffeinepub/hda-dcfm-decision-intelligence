@@ -1,53 +1,40 @@
-# HDA-DCFM Decision Intelligence — My Decision Twin Multimodal Upgrade
+# elidi — Amazing Visualization Enhancement
 
 ## Current State
-- PMT dashboard exists with 5 tabs: My Mind Twin, Twin Builder, My Versions, Simulation Lab, Growth Path
-- Assessment uses 36 questions with 1–7 scale only
-- No audio/video input capability
-- No personal journaling feature
-- Questions are abstract/vague HDA-DCFM scale questions
-- Responses stored as `[Int]` (1-7 scale values only)
-- Backend: `submitRegisteredAssessment([Int], DimensionScores, archetype, decisionForceLevel)` only
-- No blob-storage, no http-outcalls
+- Landing page has a hero section with a static SVG radar chart preview and hexagon accents
+- Investor Showcase (InvestorShowcasePage.tsx) has 22 sections with charts via Recharts (bar, scatter, pie, line, radar), an animated SVG brain in section 19, and a comprehensive org/team demo
+- No animated brain or neural visualization exists on the landing page
 
 ## Requested Changes (Diff)
 
 ### Add
-- **Multimodal input widget** per question: user picks Scale (1–7), Text box, Audio (≤1 min), or Video (≤1 min). Video default OFF, encouraged with note about richer data.
-- **New personal question bank** — 60+ personal, real-life, scenario-based questions per dimension (6 dims × 10+ questions). Randomly draw 6 per dimension each assessment. Questions are personal, skip-friendly for irrelevant contexts (e.g. business questions if user is not in business — shown with "Not applicable? Skip it" option).
-- **"Tell Me About My Day" journal tab** — record audio or video up to 3 min. Each entry auto-timestamped and listed in reverse chronological feed. No naming required; auto-title from timestamp. User can rename inline. Unlimited entries per day, unlimited total.
-- **AI analysis** — when text transcript is available (via browser SpeechRecognition or user typed text), call OpenAI GPT via HTTP outcalls to produce sentiment/theme tags and DCFM dimension signals. Results stored per entry and used to update twin training.
-- **Blob storage** for audio/video files — frontend uploads, gets URL, stores URL in backend alongside transcript.
-- Backend: `JournalEntry` type with id, userId, title, entryType, blobUrl, transcript, aiAnalysis, dimensionSignals, timestamp.
-- Backend: `saveJournalEntry`, `getUserJournalEntries`, `updateJournalEntryTitle`, `deleteJournalEntry`
-- Backend: `submitAssessmentWithText(responses: [Int], textResponses: [Text], dimensionScores, archetype, decisionForceLevel)` to store per-question text alongside scale
-- Backend: `analyzeJournalEntry(id: Text)` using http-outcalls → OpenAI API → returns tags + dimension signals
-- New 6th tab in dashboard: **My Day Journal**
+1. **Landing Page — Animated Neural Brain Section**: A new full-width section between the Radar Chart Preview and the Bio section. Features a large, animated SVG brain with pulsing neural pathways, synapse dots that fire in sequence, and 6 glowing dimension labels (PM, EM, RRM, IAI, SIS, EDI) connected to brain regions. Dark background with forest green/gold palette.
+
+2. **Landing Page — DCFM Field Visualization**: A dynamic, animated "cognitive field" visualization in the hero — floating particles connected by lines (like a force-directed graph) that represent decision signals converging, rendered in canvas or SVG with requestAnimationFrame.
+
+3. **Landing Page — Live Stats Ticker**: A row of animated counters showing platform stats (35+ Profiles Analyzed, 6 Dimensions, 10 Archetypes, 98% Accuracy) that count up when they scroll into view.
+
+4. **Investor Showcase — Neural Activation Map (new section 23)**: Interactive SVG brain where hovering over each lobe highlights which DCFM dimension it maps to with animated pulse rings. Shows current activation levels from the demo cohort average.
+
+5. **Investor Showcase — Decision Timeline River (new section 24)**: A flowing "river" visualization where each profile's decision journey is a colored stream, showing how decisions evolved over time. Uses animated SVG paths.
+
+6. **Investor Showcase — Cognitive Fingerprint Gallery (new section 25)**: A grid of 12 mini radar charts (unique fingerprints) showing diverse profile snapshots — each animated with a draw-in effect. Demonstrates the uniqueness of each Mind Twin.
+
+7. **Investor Showcase — 3D-style Dimension Force Field (new section 26)**: An animated hexagonal network visualization showing how the 6 dimensions interact with each other — edges thickness represents correlation strength, nodes pulse based on cohort average scores.
+
+8. **Investor Showcase — Real-time Decision Confidence Meter (new section 27)**: An animated arc/gauge showing the cohort's average Decision Force Level, with dynamic needle, color zones (red/amber/green), and a real-time fluctuation animation.
 
 ### Modify
-- Assessment flow in UserDashboardPage: replace simple scale-only input with `MultimodalInputWidget` per question
-- Question bank replaced with new personal, scenario-based questions (still 36 active, drawn from pool of 60+)
-- `submitRegisteredAssessment` extended or supplemented with `submitAssessmentWithText` to carry text responses
-- Dimension analysis for registered users incorporates journal entry signals over time
+- Hero section right column: Replace static SVG dashboard mockup with the animated DCFM particle field (canvas-based)
+- Section 19 animated brain in Investor Showcase: Enhance with clickable lobes that show dimension details
 
 ### Remove
-- Nothing removed — all existing features preserved
+- Nothing removed
 
 ## Implementation Plan
-1. Select components: blob-storage, http-outcalls, camera
-2. Update backend main.mo:
-   - Add JournalEntry type and state map
-   - Add saveJournalEntry, getUserJournalEntries, updateJournalEntryTitle, deleteJournalEntry
-   - Add submitAssessmentWithText (stores [Int] + [Text] responses)
-   - Add analyzeJournalEntry using http-outcalls to OpenAI
-   - Update backend.d.ts to reflect new APIs
-3. Frontend:
-   - Create `MultimodalInputWidget` component with 4 modes (scale/text/audio/video)
-   - MediaRecorder API for audio/video capture with countdown timer
-   - Web Speech API for real-time transcript during recording
-   - Replace assessment questions with new personal question bank (60+ questions, 6 drawn randomly per dimension)
-   - Add "Not applicable / Skip" option per question with dimension-aware skip handling
-   - Add "My Day Journal" tab to UserDashboardPage
-   - Journal tab: record button (audio/video), 3-min countdown, entry feed with timestamps, rename inline
-   - Show AI analysis tags on journal entries (async, shown when ready)
-   - Blob storage integration: upload audio/video blob → get URL → store in backend
+1. Add `AnimatedBrainSection` component to LandingPage — large SVG with CSS/JS animations, 6 dimension connection points, pulsing synapses
+2. Add `DCFMParticleField` canvas component for hero right column animation 
+3. Add animated stats counters row to landing page
+4. Add 5 new sections (23–27) to InvestorShowcasePage
+5. All animations must use `motion/react` (already installed) or pure CSS/SVG animations — NO new animation libraries
+6. Keep forest green (#1B4332 / #2D6A4F) and gold (#C8A24A) color palette throughout
