@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthModal } from "../components/AuthModal";
 import { Footer } from "../components/Footer";
 import { useActor } from "../hooks/useActor";
@@ -113,6 +113,17 @@ export function MyDecisionTwinPage({ onNavigate }: MyDecisionTwinPageProps) {
   const [showAuth, setShowAuth] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
+
+  // Auto-show profile form if user is authenticated but hasn't completed profile
+  useEffect(() => {
+    if (!isAuthenticated || !actor) return;
+    actor
+      .hasCompletedProfile()
+      .then((done) => {
+        if (!done) setShowAuth(true);
+      })
+      .catch(() => {});
+  }, [isAuthenticated, actor]);
 
   const handleCreateTwin = async () => {
     if (!isAuthenticated) {

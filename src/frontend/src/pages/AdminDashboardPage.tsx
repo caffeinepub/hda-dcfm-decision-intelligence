@@ -97,9 +97,10 @@ export function AdminDashboardPage({ onNavigate }: Props) {
           actor.getPlatformStats().catch(() => null),
           actor.getAllUserProfiles().catch(() => []),
         ]);
-        if (profileOpt && Array.isArray(profileOpt) && profileOpt.length > 0) {
+        if (profileOpt && profileOpt.__kind__ === "Some") {
           setSuperAdminEmail(
-            (profileOpt as unknown as [UserProfile])[0]?.email || "",
+            (profileOpt as { __kind__: "Some"; value: UserProfile }).value
+              .email || "",
           );
         }
         setStats(s as PlatformStats | null);

@@ -61,10 +61,15 @@ function AppContent() {
     }
 
     // Fix 3: Returning logged-in users go straight to their dashboard
+    // If profile not complete, send them to myDecisionTwin to complete it
     actor
       .hasCompletedProfile()
       .then((done) => {
-        if (done) setCurrentPage("userDashboard");
+        if (done) {
+          setCurrentPage("userDashboard");
+        } else {
+          setCurrentPage("myDecisionTwin");
+        }
       })
       .catch(() => {});
   }, [identity, isInitializing, actor]);
