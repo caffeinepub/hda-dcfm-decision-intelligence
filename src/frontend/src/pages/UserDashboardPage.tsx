@@ -668,16 +668,22 @@ export function UserDashboardPage({ onNavigate }: Props) {
     if (!actor) return;
     actor
       .getUserProfile()
-      .then((opt) => {
-        if (opt && "__kind__" in opt && opt.__kind__ === "Some") {
-          const p = (
-            opt as {
-              __kind__: "Some";
-              value: { name: string; country: string };
-            }
-          ).value;
-          setProfile({ name: p.name, country: p.country });
+      .then((opt: unknown) => {
+        let p: { name: string; country: string } | null = null;
+        if (Array.isArray(opt) && opt.length > 0) {
+          p = opt[0] as { name: string; country: string };
+        } else if (
+          opt &&
+          typeof opt === "object" &&
+          "__kind__" in (opt as object)
+        ) {
+          const o = opt as {
+            __kind__: string;
+            value?: { name: string; country: string };
+          };
+          if (o.__kind__ === "Some" && o.value) p = o.value;
         }
+        if (p) setProfile({ name: p.name || "", country: p.country || "" });
       })
       .catch(() => {});
     actor

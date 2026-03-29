@@ -159,12 +159,13 @@ export function AuthModal({ onClose, onSuccess }: AuthModalProps) {
   const handleProviderSelect = (provider: SocialProvider) => {
     setSelectedProvider(provider);
     setError("");
-    // If already authenticated, skip ICP popup and check profile directly
+    setStep("connect");
     if (isAuthenticated && actor) {
-      setStep("connect"); // show connecting indicator briefly
       void checkProfileAndRoute();
+    } else if (isAuthenticated && !actor) {
+      // actor not ready yet, useEffect will handle it when actor becomes available
     } else {
-      setStep("connect");
+      login();
     }
   };
 

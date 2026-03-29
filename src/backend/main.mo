@@ -125,9 +125,9 @@ actor {
   let decisionLogs = Map.empty<Text, DecisionLog>();
   let journalEntries = Map.empty<Text, JournalEntry>();
 
-  var idCounter : Nat32 = 0;
-  var openaiApiKey : Text = "";
-  var demoDataSeeded : Bool = false;
+  stable var idCounter : Nat32 = 0;
+  stable var openaiApiKey : Text = "";
+  stable var demoDataSeeded : Bool = false;
 
   func generateId() : Text {
     idCounter += 1;
@@ -165,7 +165,7 @@ actor {
     };
     userProfiles.add(uid, { principalId = uid; name; country; phone; email; createdAt });
     // Super admin bootstrap: use email match OR first-ever profile (no admin exists yet)
-    if (email == "sathishsampath@gmail.com" or not accessControlState.adminAssigned) {
+    if (email == "sathishsampath@gmail.com") {
       accessControlState.userRoles.add(caller, #admin);
       accessControlState.adminAssigned := true;
     };
@@ -178,7 +178,7 @@ actor {
   public query ({ caller }) func hasCompletedProfile() : async Bool {
     switch (userProfiles.get(caller.toText())) {
       case (null) { false };
-      case (?p) { p.country != "" and p.phone != "" };
+      case (?p) { p.country != "" and p.phone != "" and p.email != "" };
     };
   };
 

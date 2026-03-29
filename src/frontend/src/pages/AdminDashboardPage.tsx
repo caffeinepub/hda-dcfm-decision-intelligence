@@ -101,7 +101,9 @@ export function AdminDashboardPage({ onNavigate }: Props) {
         let adminEmail = "";
         if (Array.isArray(profileOpt) && profileOpt.length > 0) {
           const raw = profileOpt[0] as Record<string, unknown>;
-          adminEmail = typeof raw.email === "string" ? raw.email : "";
+          adminEmail = (typeof raw.email === "string" ? raw.email : "")
+            .trim()
+            .toLowerCase();
         } else if (
           profileOpt &&
           typeof profileOpt === "object" &&
@@ -110,7 +112,7 @@ export function AdminDashboardPage({ onNavigate }: Props) {
         ) {
           const v = (profileOpt as { __kind__: "Some"; value: UserProfile })
             .value;
-          adminEmail = v.email || "";
+          adminEmail = (v.email || "").trim().toLowerCase();
         }
         setSuperAdminEmail(adminEmail);
         setStats(s as PlatformStats | null);
@@ -276,20 +278,29 @@ export function AdminDashboardPage({ onNavigate }: Props) {
               ← Dashboard
             </button>
             <h1 className="text-white font-bold">Admin Dashboard</h1>
-            {superAdminEmail === "sathishsampath@gmail.com" && (
-              <span
-                className="text-xs px-3 py-1 rounded-full font-bold"
-                style={{
-                  background: `linear-gradient(135deg, ${GOLD}, #a07830)`,
-                  color: "#1B4332",
-                }}
-              >
-                ⭐ Super Admin
-              </span>
+            {superAdminEmail.trim().toLowerCase() ===
+              "sathishsampath@gmail.com" && (
+              <div>
+                <span
+                  className="text-xs px-3 py-1 rounded-full font-bold"
+                  style={{
+                    background: `linear-gradient(135deg, ${GOLD}, #a07830)`,
+                    color: "#1B4332",
+                  }}
+                >
+                  ⭐ Super Admin
+                </span>
+                {superAdminEmail && (
+                  <p className="text-xs text-yellow-400/70 mt-1">
+                    Logged in as: {superAdminEmail}
+                  </p>
+                )}
+              </div>
             )}
           </div>
           <div className="flex items-center gap-3">
-            {superAdminEmail === "sathishsampath@gmail.com" && (
+            {superAdminEmail.trim().toLowerCase() ===
+              "sathishsampath@gmail.com" && (
               <button
                 type="button"
                 onClick={() => onNavigate("showcase")}
