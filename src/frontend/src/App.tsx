@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navbar } from "./components/Navbar";
+import { useActor } from "./hooks/useActor";
+import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { AdminDashboardPage } from "./pages/AdminDashboardPage";
 import { AssessmentPage } from "./pages/AssessmentPage";
 import { DimensionsPage } from "./pages/DimensionsPage";
@@ -30,6 +32,42 @@ type Page =
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
+  const { identity, isInitializing } = useInternetIdentity();
+  const { actor } = useActor();
+  // Use a ref to ensure auto-nav only fires once per session load
+  const autoNavFired = useRef(false);
+
+  useEffect(() => {
+    if (isInitializing || autoNavFired.current || !actor) return;
+    const isAuthenticated =
+      !!identity && !identity.getPrincipal().isAnonymous();
+    if (!isAuthenticated) return;
+
+    autoNavFired.current = true;
+
+    const hash = window.location.hash;
+    const hasAdminToken = hash.includes("caffeineAdminToken");
+
+    if (hasAdminToken) {
+      // Fix 2: Blank page on admin token URL — redirect properly
+      window.history.replaceState(null, "", window.location.pathname);
+      actor
+        .isCallerAdmin()
+        .then((isAdmin) => {
+          setCurrentPage(isAdmin ? "adminDashboard" : "userDashboard");
+        })
+        .catch(() => setCurrentPage("userDashboard"));
+      return;
+    }
+
+    // Fix 3: Returning logged-in users go straight to their dashboard
+    actor
+      .hasCompletedProfile()
+      .then((done) => {
+        if (done) setCurrentPage("userDashboard");
+      })
+      .catch(() => {});
+  }, [identity, isInitializing, actor]);
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page as Page);
