@@ -6,6 +6,10 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
+import dcfmVisual1 from "../assets/dcfm-visual-1.png";
+import dcfmVisual2 from "../assets/dcfm-visual-2.png";
+import dcfmVisual3 from "../assets/dcfm-visual-3.png";
+import sathishPhoto1 from "../assets/sathish-photo-1.jpg";
 
 interface HowItWorksPageProps {
   onNavigate: (page: string) => void;
@@ -228,7 +232,7 @@ function DCFMOriginModal({
                   style={{ border: "1px solid rgba(200,162,74,0.25)" }}
                 >
                   <img
-                    src="/assets/uploads/ChatGPT-Image-Mar-18-2026-at-07_27_02-PM-2.png"
+                    src={dcfmVisual1}
                     alt="Dynamic Cognitive Field Manifold (DCFM) visual"
                     className="w-full object-cover"
                     style={{
@@ -779,7 +783,7 @@ function DCFMOriginModal({
                   style={{ border: "1px solid rgba(167,139,250,0.25)" }}
                 >
                   <img
-                    src="/assets/uploads/Screenshot-2026-03-20-at-3.28.29-PM-1.png"
+                    src={dcfmVisual2}
                     alt="Human Decision Architecture (HDA) mapped onto DCFM"
                     className="w-full object-contain"
                     style={{ maxHeight: "500px", background: "#0D2B1E" }}
@@ -816,7 +820,7 @@ function DCFMOriginModal({
                   style={{ border: "1px solid rgba(200,162,74,0.3)" }}
                 >
                   <img
-                    src="/assets/uploads/Screenshot-2026-03-21-at-3.56.03-PM-1.png"
+                    src={dcfmVisual3}
                     alt="HDA-DCFM Framework — full cognitive map"
                     className="w-full object-contain"
                     style={{ maxHeight: "500px", background: "#0D2B1E" }}
@@ -1771,7 +1775,7 @@ export function HowItWorksPage({ onNavigate }: HowItWorksPageProps) {
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             <div className="flex-shrink-0">
               <img
-                src="/assets/uploads/SATHISH-SAMPATH11-2-1.jpg"
+                src={sathishPhoto1}
                 alt="Sathish Sampath"
                 className="w-28 h-28 rounded-full object-cover border-4 border-yellow-500"
                 style={{ objectPosition: "center top" }}

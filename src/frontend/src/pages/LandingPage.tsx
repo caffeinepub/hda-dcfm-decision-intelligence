@@ -1,5 +1,7 @@
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import sathishPhoto1 from "../assets/sathish-photo-1.jpg";
+import sathishPhoto2 from "../assets/sathish-photo-2.jpg";
 import { Footer } from "../components/Footer";
 
 const DIMENSIONS = [
@@ -1588,7 +1590,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 }}
               >
                 <img
-                  src="/assets/uploads/SATHISH-SAMPATH11-2-1.jpg"
+                  src={sathishPhoto1}
                   alt="Sathish Sampath"
                   className="rounded-2xl object-cover"
                   style={{
@@ -1605,7 +1607,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 }}
               >
                 <img
-                  src="/assets/uploads/05-2-1.jpg"
+                  src={sathishPhoto2}
                   alt="Sathish Sampath"
                   className="rounded-2xl object-cover"
                   style={{

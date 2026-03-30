@@ -1,5 +1,6 @@
 import { ExternalLink } from "lucide-react";
 import { motion } from "motion/react";
+import sathishPhoto1 from "../assets/sathish-photo-1.jpg";
 import { Footer } from "../components/Footer";
 
 const DIMENSIONS = [
@@ -361,7 +362,7 @@ export function LearnMorePage({ onNavigate }: LearnMorePageProps) {
                   }}
                 >
                   <img
-                    src="/assets/uploads/SATHISH-SAMPATH11-2-1.jpg"
+                    src={sathishPhoto1}
                     alt="Sathish Sampath"
                     className="rounded-2xl object-cover w-full max-w-xs"
                     style={{
