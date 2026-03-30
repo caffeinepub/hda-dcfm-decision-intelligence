@@ -1,4 +1,5 @@
 import { HttpAgent } from "@icp-sdk/core/agent";
+import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DynamicRadarChart } from "../components/DynamicRadarChart";
@@ -24,7 +25,14 @@ interface Props {
   onNavigate: (page: string) => void;
 }
 
-type TabId = "twin" | "builder" | "versions" | "simlab" | "growth" | "journal";
+type TabId =
+  | "twin"
+  | "builder"
+  | "versions"
+  | "simlab"
+  | "growth"
+  | "journal"
+  | "decisionlog";
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: "twin", label: "My Mind Twin", icon: "🧠" },
@@ -33,6 +41,7 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: "simlab", label: "Simulation Lab", icon: "⚗️" },
   { id: "growth", label: "Growth Path", icon: "📈" },
   { id: "journal", label: "My Day Journal", icon: "📓" },
+  { id: "decisionlog", label: "Decision Log", icon: "📋" },
 ];
 
 // ─── Personal Question Bank (60 questions, 10 per dimension) ─────────────────
@@ -520,14 +529,17 @@ type JournalEntry = {
 function GreenCard({
   children,
   className = "",
-}: { children: React.ReactNode; className?: string }) {
+  ...props
+}: { children: React.ReactNode; className?: string; [k: string]: unknown }) {
   return (
     <div
       className={`rounded-2xl p-6 ${className}`}
       style={{
-        backgroundColor: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.1)",
+        background:
+          "linear-gradient(135deg, rgba(27,67,50,0.6) 0%, rgba(10,31,20,0.8) 100%)",
+        border: "1px solid rgba(255,255,255,0.08)",
       }}
+      {...props}
     >
       {children}
     </div>
@@ -549,6 +561,57 @@ function formatTimer(s: number): string {
   const m = Math.floor(s / 60);
   const sec = s % 60;
   return `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
+}
+
+// Explainer Banner Component
+function ExplainerBanner({
+  tabId,
+  icon,
+  title,
+  body,
+  showExplainer,
+  setShowExplainer,
+}: {
+  tabId: string;
+  icon: string;
+  title: string;
+  body: string;
+  showExplainer: Record<string, boolean>;
+  setShowExplainer: React.Dispatch<
+    React.SetStateAction<Record<string, boolean>>
+  >;
+}) {
+  if (!showExplainer[tabId]) return null;
+  return (
+    <div
+      className="mb-6 rounded-2xl p-5 relative"
+      style={{
+        background:
+          "linear-gradient(135deg, rgba(200,162,74,0.12) 0%, rgba(200,162,74,0.04) 100%)",
+        border: "1px solid rgba(200,162,74,0.35)",
+      }}
+    >
+      <button
+        type="button"
+        onClick={() =>
+          setShowExplainer((prev) => ({ ...prev, [tabId]: false }))
+        }
+        className="absolute top-3 right-4 text-white/30 hover:text-white/70 text-lg transition-colors"
+        aria-label="Dismiss"
+      >
+        ✕
+      </button>
+      <div className="flex items-start gap-3 pr-8">
+        <span className="text-2xl">{icon}</span>
+        <div>
+          <h3 className="font-bold text-sm mb-1" style={{ color: "#C8A24A" }}>
+            {title}
+          </h3>
+          <p className="text-white/65 text-sm leading-relaxed">{body}</p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function UserDashboardPage({ onNavigate }: Props) {
@@ -578,6 +641,18 @@ export function UserDashboardPage({ onNavigate }: Props) {
       .map(() => ({ ...EMPTY_RESPONSE })),
   );
   const [asmSubmitting, setAsmSubmitting] = useState(false);
+  const [twinAssessmentName, setTwinAssessmentName] = useState("");
+  const [asmSuccessResult, setAsmSuccessResult] = useState<{
+    archetype: string;
+    scores: Record<string, number>;
+  } | null>(null);
+  const [showExplainer, setShowExplainer] = useState<Record<string, boolean>>({
+    builder: true,
+    simlab: true,
+    growth: true,
+    journal: true,
+    decisionlog: true,
+  });
 
   // Twin Builder
   const [bVersionName, setBVersionName] = useState("My Twin");
@@ -632,6 +707,19 @@ export function UserDashboardPage({ onNavigate }: Props) {
   const [logActualOutcome, setLogActualOutcome] = useState("");
   const [decisionLogs, setDecisionLogs] = useState<DecisionLogEntry[]>([]);
   const [logSaving, setLogSaving] = useState(false);
+  // Decision Log tab
+  const [dlMode, setDlMode] = useState<"text" | "audio" | "video">("text");
+  const [dlRecording, setDlRecording] = useState(false);
+  const [dlBlob, setDlBlob] = useState<Blob | null>(null);
+  const [dlBlobUrl, setDlBlobUrl] = useState<string | null>(null);
+  const [dlTranscript, setDlTranscript] = useState("");
+  const [dlTimeLeft, setDlTimeLeft] = useState(180);
+  const dlMrRef = useRef<MediaRecorder | null>(null);
+  const dlChunksRef = useRef<Blob[]>([]);
+  const dlTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const dlStreamRef = useRef<MediaStream | null>(null);
+  const _dlVideoRef = useRef<HTMLVideoElement | null>(null);
+  const dlRecogRef = useRef<any>(null);
 
   // Journal
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
@@ -707,6 +795,10 @@ export function UserDashboardPage({ onNavigate }: Props) {
       if (journalStreamRef.current)
         for (const t of journalStreamRef.current.getTracks()) t.stop();
       if (journalRecogRef.current) journalRecogRef.current.stop();
+      if (dlTimerRef.current) clearInterval(dlTimerRef.current);
+      if (dlStreamRef.current)
+        for (const t of dlStreamRef.current.getTracks()) t.stop();
+      if (dlRecogRef.current) dlRecogRef.current.stop();
     };
   }, []);
 
@@ -800,7 +892,25 @@ export function UserDashboardPage({ onNavigate }: Props) {
         await actor.submitAssessment(bigintR, scores, archetype, forceLevel);
       }
       await loadAssessments();
-      toast.success("Assessment saved!");
+      // Auto-create a named twin version from this assessment
+      const versionLabel =
+        twinAssessmentName.trim() ||
+        `Assessment v${assessments.length + 1} — ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+      try {
+        await actor.saveTwinVersion(
+          versionLabel,
+          scores.pm,
+          scores.em,
+          scores.rrm,
+          scores.iai,
+          scores.sis,
+          scores.edi,
+          "Created from assessment",
+        );
+        await loadVersions();
+      } catch (_) {}
+      toast.success("Assessment saved! Twin version created.");
+      setAsmSuccessResult({ archetype, scores });
       setShowAssessment(false);
       setAsmResponses(
         Array(36)
@@ -808,6 +918,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
           .map(() => ({ ...EMPTY_RESPONSE })),
       );
       setAsmStep(0);
+      setTwinAssessmentName("");
     } catch (_) {
       toast.error("Failed to save assessment. Please try again.");
     } finally {
@@ -1202,6 +1313,20 @@ export function UserDashboardPage({ onNavigate }: Props) {
       className="min-h-screen"
       style={{ backgroundColor: "#0A1F14", color: "white" }}
     >
+      <style>{`
+        @keyframes tabGlow {
+          0%, 100% { box-shadow: 0 2px 8px rgba(200,162,74,0.3); }
+          50% { box-shadow: 0 2px 16px rgba(200,162,74,0.6); }
+        }
+        .active-tab-glow {
+          animation: tabGlow 2s ease-in-out infinite;
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+      `}</style>
       {/* Header */}
       <div
         style={{
@@ -1269,7 +1394,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className="flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all"
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${activeTab === tab.id ? "active-tab-glow" : ""}`}
                 style={{
                   borderBottomColor:
                     activeTab === tab.id ? gold : "transparent",
@@ -1295,6 +1420,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                 type="button"
                 onClick={() => {
                   setShowAssessment(!showAssessment);
+                  setAsmSuccessResult(null);
                   setAsmStep(0);
                   setAsmResponses(
                     Array(36)
@@ -1309,6 +1435,87 @@ export function UserDashboardPage({ onNavigate }: Props) {
                 {showAssessment ? "Cancel" : "Take New Assessment"}
               </button>
             </div>
+
+            {/* Assessment Success Screen */}
+            {asmSuccessResult && !showAssessment && (
+              <div
+                className="mb-6 rounded-2xl overflow-hidden"
+                style={{
+                  border: "1px solid rgba(200,162,74,0.4)",
+                  background:
+                    "linear-gradient(135deg, rgba(27,67,50,0.9) 0%, rgba(10,31,20,0.95) 100%)",
+                }}
+              >
+                <div className="px-8 py-8 text-center">
+                  <div className="text-6xl mb-3 animate-bounce">🎉</div>
+                  <h3
+                    className="text-2xl font-bold mb-1"
+                    style={{ color: gold }}
+                  >
+                    Assessment Complete!
+                  </h3>
+                  <p className="text-white/60 text-sm mb-4">
+                    Your twin version has been created and saved to My Versions
+                  </p>
+                  <div
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6"
+                    style={{
+                      backgroundColor: "rgba(200,162,74,0.15)",
+                      border: "1px solid rgba(200,162,74,0.3)",
+                    }}
+                  >
+                    <span style={{ color: gold }} className="font-bold">
+                      Your Archetype:
+                    </span>
+                    <span className="text-white font-semibold">
+                      {asmSuccessResult.archetype}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 mb-6">
+                    {Object.entries(asmSuccessResult.scores).map(
+                      ([dim, val]) => (
+                        <div
+                          key={dim}
+                          className="rounded-xl p-3 text-center"
+                          style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
+                        >
+                          <div className="text-xs text-white/40 uppercase mb-1">
+                            {dim.toUpperCase()}
+                          </div>
+                          <div
+                            className="text-xl font-bold"
+                            style={{ color: gold }}
+                          >
+                            {(val as number).toFixed(1)}
+                          </div>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                  <div className="flex gap-3 justify-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAsmSuccessResult(null);
+                        setActiveTab("versions");
+                      }}
+                      className="px-6 py-2.5 rounded-xl font-bold text-sm"
+                      style={{ backgroundColor: gold, color: "#1B4332" }}
+                      data-ocid="twin.view_versions.button"
+                    >
+                      View My Versions →
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAsmSuccessResult(null)}
+                      className="px-6 py-2.5 rounded-xl font-bold text-sm border border-white/20 text-white/60 hover:text-white"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {showAssessment && (
               <GreenCard className="mb-6">
@@ -1325,14 +1532,23 @@ export function UserDashboardPage({ onNavigate }: Props) {
                       Step {asmStep + 1}/6
                     </span>
                   </div>
-                  <div className="h-1.5 rounded-full bg-white/10">
+                  <div className="h-2 rounded-full bg-white/10 overflow-hidden">
                     <div
-                      className="h-1.5 rounded-full"
+                      className="h-2 rounded-full transition-all duration-500"
                       style={{
                         width: `${((asmStep + 1) / 6) * 100}%`,
-                        backgroundColor: gold,
+                        background: `linear-gradient(90deg, ${gold}88, ${gold})`,
                       }}
                     />
+                  </div>
+                  <div
+                    className="flex justify-between text-xs mt-1"
+                    style={{ color: "rgba(200,162,74,0.5)" }}
+                  >
+                    <span>
+                      {Math.round(((asmStep + 1) / 6) * 100)}% complete
+                    </span>
+                    <span>{asmStep + 1} of 6 dimensions</span>
                   </div>
                   <div
                     className="mt-4 mb-5 p-4 rounded-xl"
@@ -1390,6 +1606,39 @@ export function UserDashboardPage({ onNavigate }: Props) {
                   })}
                 </div>
 
+                {asmStep === 5 && (
+                  <div
+                    className="mb-4 mt-2 p-4 rounded-xl"
+                    style={{
+                      backgroundColor: "rgba(200,162,74,0.08)",
+                      border: "1px solid rgba(200,162,74,0.25)",
+                    }}
+                  >
+                    <label
+                      htmlFor="asm-version-name"
+                      className="block text-sm font-semibold mb-2"
+                      style={{ color: gold }}
+                    >
+                      🏷️ Name this twin version
+                    </label>
+                    <input
+                      type="text"
+                      value={twinAssessmentName}
+                      onChange={(e) => setTwinAssessmentName(e.target.value)}
+                      placeholder={`Assessment v${assessments.length + 1} — ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                      className="w-full px-4 py-2.5 rounded-xl text-white text-sm outline-none"
+                      style={{
+                        backgroundColor: "rgba(255,255,255,0.07)",
+                        border: "1px solid rgba(200,162,74,0.4)",
+                      }}
+                      id="asm-version-name"
+                      data-ocid="assessment.version_name.input"
+                    />
+                    <p className="text-xs text-white/40 mt-1.5">
+                      This version will appear in My Versions after submission
+                    </p>
+                  </div>
+                )}
                 <div className="flex justify-between mt-6">
                   <button
                     type="button"
@@ -1404,7 +1653,14 @@ export function UserDashboardPage({ onNavigate }: Props) {
                     <button
                       type="button"
                       disabled={!allAnswered}
-                      onClick={() => setAsmStep((s) => s + 1)}
+                      onClick={() => {
+                        setAsmStep((s) => s + 1);
+                        if (asmStep === 4 && !twinAssessmentName) {
+                          setTwinAssessmentName(
+                            `Assessment v${assessments.length + 1} — ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}`,
+                          );
+                        }
+                      }}
                       className="px-6 py-2 rounded-lg text-sm font-bold disabled:opacity-40"
                       style={{ backgroundColor: gold, color: "#1B4332" }}
                       data-ocid="assessment.next.button"
@@ -1420,7 +1676,7 @@ export function UserDashboardPage({ onNavigate }: Props) {
                       style={{ backgroundColor: gold, color: "#1B4332" }}
                       data-ocid="assessment.submit.button"
                     >
-                      {asmSubmitting ? "Saving..." : "Submit Assessment"}
+                      {asmSubmitting ? "Saving..." : "Submit & Create Twin"}
                     </button>
                   )}
                 </div>
@@ -1516,176 +1772,187 @@ export function UserDashboardPage({ onNavigate }: Props) {
 
         {/* ─── TAB 2: Twin Builder ───────────────────────────────────── */}
         {activeTab === "builder" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div>
-              <h2 className="text-xl font-bold mb-6">Twin Builder</h2>
-              {!latestScores && (
-                <div
-                  className="mb-4 px-4 py-3 rounded-xl text-sm"
-                  style={{
-                    backgroundColor: "rgba(200,162,74,0.1)",
-                    border: "1px solid rgba(200,162,74,0.25)",
-                    color: gold,
-                  }}
-                >
-                  Take an assessment first to seed your base values.
-                </div>
-              )}
-              <GreenCard>
-                <div className="mb-4">
-                  <label
-                    className="block text-white/70 text-sm font-medium mb-1"
-                    htmlFor="vname"
-                  >
-                    Version Name
-                  </label>
-                  <input
-                    id="vname"
-                    type="text"
-                    value={bVersionName}
-                    onChange={(e) => setBVersionName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none"
-                    style={{
-                      backgroundColor: "rgba(255,255,255,0.07)",
-                      border: "1px solid rgba(255,255,255,0.15)",
-                    }}
-                    placeholder="e.g. Bold Me, Calm Me, Future Me"
-                    data-ocid="builder.version_name.input"
-                  />
-                </div>
-                <div className="space-y-5 mb-5">
-                  {DIMENSIONS.map((dim) => (
-                    <div key={dim}>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-white/70">
-                          {DIMENSION_SHORT[dim]} \u2014 {DIMENSION_LABELS[dim]}
-                        </span>
-                        <span style={{ color: gold }} className="font-bold">
-                          {bSliders[dim].toFixed(1)}
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="7"
-                        step="0.1"
-                        value={bSliders[dim]}
-                        onChange={(e) =>
-                          setBSliders((prev) => ({
-                            ...prev,
-                            [dim]: Number.parseFloat(e.target.value),
-                          }))
-                        }
-                        className="w-full accent-yellow-500"
-                        data-ocid={`builder.${dim}.input`}
-                      />
-                      {latestScores && (
-                        <div className="text-xs text-white/30 mt-1">
-                          Base:{" "}
-                          {(
-                            latestScores[
-                              dim as keyof typeof latestScores
-                            ] as number
-                          ).toFixed(2)}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div className="mb-5">
-                  <label
-                    className="block text-white/70 text-sm font-medium mb-1"
-                    htmlFor="bnotes"
-                  >
-                    Notes (optional)
-                  </label>
-                  <textarea
-                    id="bnotes"
-                    value={bNotes}
-                    onChange={(e) => setBNotes(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none resize-none"
-                    style={{
-                      backgroundColor: "rgba(255,255,255,0.07)",
-                      border: "1px solid rgba(255,255,255,0.15)",
-                    }}
-                    rows={2}
-                    placeholder="What does this version represent?"
-                    data-ocid="builder.notes.textarea"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSaveTwin}
-                  disabled={bSaving || !bVersionName.trim()}
-                  className="w-full py-3 rounded-xl font-bold text-sm disabled:opacity-50"
-                  style={{ backgroundColor: gold, color: "#1B4332" }}
-                  data-ocid="builder.save.button"
-                >
-                  {bSaving ? "Saving..." : "Save Twin Version"}
-                </button>
-              </GreenCard>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold mb-4">Simulation Preview</h3>
-              {latestScores ? (
-                <GreenCard>
+          <div>
+            <ExplainerBanner
+              tabId="builder"
+              icon="🎛️"
+              title="What is Twin Builder?"
+              body="This is your cognitive workshop. Adjust the 6 HDA-DCFM dimensions using the sliders to craft different versions of yourself — your 'cautious self', your 'bold self', your 'future self'. Each saved version can be used in Simulation Lab to test decisions."
+              showExplainer={showExplainer}
+              setShowExplainer={setShowExplainer}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div>
+                <h2 className="text-xl font-bold mb-6">Twin Builder</h2>
+                {!latestScores && (
                   <div
-                    className="mb-3 text-xs font-semibold"
-                    style={{ color: gold, letterSpacing: "0.08em" }}
+                    className="mb-4 px-4 py-3 rounded-xl text-sm"
+                    style={{
+                      backgroundColor: "rgba(200,162,74,0.1)",
+                      border: "1px solid rgba(200,162,74,0.25)",
+                      color: gold,
+                    }}
                   >
-                    DCFM DECISION FORCE
+                    Take an assessment first to seed your base values.
                   </div>
-                  {(() => {
-                    const f = computeDecisionForce(
-                      bSliders as Record<Dimension, number>,
-                    );
-                    return (
-                      <>
-                        <div className="text-4xl font-bold text-white mb-1">
-                          {f.toFixed(2)}
-                        </div>
-                        <div className="text-white/60 text-sm mb-4">
-                          {interpretForce(f)}
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div
-                            className="rounded-xl p-3"
-                            style={{
-                              backgroundColor: "rgba(255,255,255,0.05)",
-                            }}
-                          >
-                            <div className="text-xs text-white/40 mb-1">
-                              Time to Decision
-                            </div>
-                            <div className="text-sm font-semibold">
-                              {timeToDecision(bSliders.em)}
-                            </div>
-                          </div>
-                          <div
-                            className="rounded-xl p-3"
-                            style={{
-                              backgroundColor: "rgba(255,255,255,0.05)",
-                            }}
-                          >
-                            <div className="text-xs text-white/40 mb-1">
-                              Stability
-                            </div>
-                            <div className="text-sm font-semibold">
-                              {stabilityRating(bSliders.iai)}
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </GreenCard>
-              ) : (
+                )}
                 <GreenCard>
-                  <div className="text-center py-6" style={{ color: gold }}>
-                    Take an assessment first to see your Simulation Preview.
+                  <div className="mb-4">
+                    <label
+                      className="block text-white/70 text-sm font-medium mb-1"
+                      htmlFor="vname"
+                    >
+                      Version Name
+                    </label>
+                    <input
+                      id="vname"
+                      type="text"
+                      value={bVersionName}
+                      onChange={(e) => setBVersionName(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none"
+                      style={{
+                        backgroundColor: "rgba(255,255,255,0.07)",
+                        border: "1px solid rgba(255,255,255,0.15)",
+                      }}
+                      placeholder="e.g. Bold Me, Calm Me, Future Me"
+                      data-ocid="builder.version_name.input"
+                    />
                   </div>
+                  <div className="space-y-5 mb-5">
+                    {DIMENSIONS.map((dim) => (
+                      <div key={dim}>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="text-white/70">
+                            {DIMENSION_SHORT[dim]} \u2014{" "}
+                            {DIMENSION_LABELS[dim]}
+                          </span>
+                          <span style={{ color: gold }} className="font-bold">
+                            {bSliders[dim].toFixed(1)}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1"
+                          max="7"
+                          step="0.1"
+                          value={bSliders[dim]}
+                          onChange={(e) =>
+                            setBSliders((prev) => ({
+                              ...prev,
+                              [dim]: Number.parseFloat(e.target.value),
+                            }))
+                          }
+                          className="w-full accent-yellow-500"
+                          data-ocid={`builder.${dim}.input`}
+                        />
+                        {latestScores && (
+                          <div className="text-xs text-white/30 mt-1">
+                            Base:{" "}
+                            {(
+                              latestScores[
+                                dim as keyof typeof latestScores
+                              ] as number
+                            ).toFixed(2)}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mb-5">
+                    <label
+                      className="block text-white/70 text-sm font-medium mb-1"
+                      htmlFor="bnotes"
+                    >
+                      Notes (optional)
+                    </label>
+                    <textarea
+                      id="bnotes"
+                      value={bNotes}
+                      onChange={(e) => setBNotes(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none resize-none"
+                      style={{
+                        backgroundColor: "rgba(255,255,255,0.07)",
+                        border: "1px solid rgba(255,255,255,0.15)",
+                      }}
+                      rows={2}
+                      placeholder="What does this version represent?"
+                      data-ocid="builder.notes.textarea"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSaveTwin}
+                    disabled={bSaving || !bVersionName.trim()}
+                    className="w-full py-3 rounded-xl font-bold text-sm disabled:opacity-50"
+                    style={{ backgroundColor: gold, color: "#1B4332" }}
+                    data-ocid="builder.save.button"
+                  >
+                    {bSaving ? "Saving..." : "Save Twin Version"}
+                  </button>
                 </GreenCard>
-              )}
+              </div>
+              <div>
+                <h3 className="text-lg font-bold mb-4">Simulation Preview</h3>
+                {latestScores ? (
+                  <GreenCard>
+                    <div
+                      className="mb-3 text-xs font-semibold"
+                      style={{ color: gold, letterSpacing: "0.08em" }}
+                    >
+                      DCFM DECISION FORCE
+                    </div>
+                    {(() => {
+                      const f = computeDecisionForce(
+                        bSliders as Record<Dimension, number>,
+                      );
+                      return (
+                        <>
+                          <div className="text-4xl font-bold text-white mb-1">
+                            {f.toFixed(2)}
+                          </div>
+                          <div className="text-white/60 text-sm mb-4">
+                            {interpretForce(f)}
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div
+                              className="rounded-xl p-3"
+                              style={{
+                                backgroundColor: "rgba(255,255,255,0.05)",
+                              }}
+                            >
+                              <div className="text-xs text-white/40 mb-1">
+                                Time to Decision
+                              </div>
+                              <div className="text-sm font-semibold">
+                                {timeToDecision(bSliders.em)}
+                              </div>
+                            </div>
+                            <div
+                              className="rounded-xl p-3"
+                              style={{
+                                backgroundColor: "rgba(255,255,255,0.05)",
+                              }}
+                            >
+                              <div className="text-xs text-white/40 mb-1">
+                                Stability
+                              </div>
+                              <div className="text-sm font-semibold">
+                                {stabilityRating(bSliders.iai)}
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </GreenCard>
+                ) : (
+                  <GreenCard>
+                    <div className="text-center py-6" style={{ color: gold }}>
+                      Take an assessment first to see your Simulation Preview.
+                    </div>
+                  </GreenCard>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -1720,56 +1987,94 @@ export function UserDashboardPage({ onNavigate }: Props) {
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
-                  {versions.map((v, vi) => (
-                    <GreenCard key={v.id} data-ocid={`versions.item.${vi + 1}`}>
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className="font-bold">{v.versionName}</h3>
-                          <p className="text-white/40 text-xs mt-0.5">
-                            {new Date(
-                              Number(v.createdAt) / 1_000_000,
-                            ).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteVersion(v.id)}
-                          className="text-white/30 hover:text-red-400 text-xs"
-                          data-ocid={`versions.delete_button.${vi + 1}`}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                      <div className="space-y-2 mb-3">
-                        {DIMENSIONS.map((dim) => (
-                          <div key={dim} className="flex items-center gap-2">
-                            <span className="text-white/40 text-xs w-8">
-                              {DIMENSION_SHORT[dim]}
-                            </span>
-                            <div className="flex-1 h-1.5 rounded-full bg-white/10">
-                              <div
-                                className="h-1.5 rounded-full"
-                                style={{
-                                  width: `${((v[dim as keyof TwinVersion] as number) / 7) * 100}%`,
-                                  backgroundColor: gold,
-                                }}
-                              />
-                            </div>
-                            <span className="text-xs text-white/50">
-                              {(v[dim as keyof TwinVersion] as number).toFixed(
-                                1,
-                              )}
-                            </span>
+                  {versions.map((v, vi) => {
+                    const vScores = {
+                      pm: v.pm,
+                      em: v.em,
+                      rrm: v.rrm,
+                      iai: v.iai,
+                      sis: v.sis,
+                      edi: v.edi,
+                    };
+                    const vArchetype = classifyArchetype(
+                      vScores as Record<string, number>,
+                    );
+                    const borderColors = [
+                      "#60a5fa",
+                      "#34d399",
+                      "#f59e0b",
+                      "#a78bfa",
+                      "#fb7185",
+                      "#38bdf8",
+                    ];
+                    const borderColor = borderColors[vi % borderColors.length];
+                    return (
+                      <div
+                        key={v.id}
+                        className="rounded-2xl p-6"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, rgba(27,67,50,0.6) 0%, rgba(10,31,20,0.8) 100%)",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          borderLeft: `4px solid ${borderColor}`,
+                        }}
+                        data-ocid={`versions.item.${vi + 1}`}
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <h3 className="font-bold">{v.versionName}</h3>
+                            <p
+                              className="text-xs mt-0.5"
+                              style={{ color: borderColor }}
+                            >
+                              {vArchetype}
+                            </p>
+                            <p className="text-white/40 text-xs mt-0.5">
+                              {new Date(
+                                Number(v.createdAt) / 1_000_000,
+                              ).toLocaleDateString()}
+                            </p>
                           </div>
-                        ))}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteVersion(v.id)}
+                            className="text-white/30 hover:text-red-400 text-xs"
+                            data-ocid={`versions.delete_button.${vi + 1}`}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                        <div className="space-y-2 mb-3">
+                          {DIMENSIONS.map((dim) => (
+                            <div key={dim} className="flex items-center gap-2">
+                              <span className="text-white/40 text-xs w-8">
+                                {DIMENSION_SHORT[dim]}
+                              </span>
+                              <div className="flex-1 h-1.5 rounded-full bg-white/10">
+                                <div
+                                  className="h-1.5 rounded-full"
+                                  style={{
+                                    width: `${((v[dim as keyof TwinVersion] as number) / 7) * 100}%`,
+                                    backgroundColor: gold,
+                                  }}
+                                />
+                              </div>
+                              <span className="text-xs text-white/50">
+                                {(
+                                  v[dim as keyof TwinVersion] as number
+                                ).toFixed(1)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        {v.notes && (
+                          <p className="text-white/40 text-xs italic">
+                            {v.notes}
+                          </p>
+                        )}
                       </div>
-                      {v.notes && (
-                        <p className="text-white/40 text-xs italic">
-                          {v.notes}
-                        </p>
-                      )}
-                    </GreenCard>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {versions.length >= 2 && (
@@ -1877,6 +2182,14 @@ export function UserDashboardPage({ onNavigate }: Props) {
         {/* ─── TAB 4: Simulation Lab ──────────────────────────────── */}
         {activeTab === "simlab" && (
           <div className="max-w-3xl">
+            <ExplainerBanner
+              tabId="simlab"
+              icon="⚗️"
+              title="What is Simulation Lab?"
+              body="Put your twin versions to the test. Describe a real-life scenario — a career move, investment, relationship decision — select one or more saved twin versions, and see how each version of you would approach, reason, and decide. Use this to prepare for important decisions before you make them."
+              showExplainer={showExplainer}
+              setShowExplainer={setShowExplainer}
+            />
             <h2 className="text-xl font-bold mb-6">Simulation Lab</h2>
             <GreenCard className="mb-6">
               <label
@@ -2215,6 +2528,14 @@ export function UserDashboardPage({ onNavigate }: Props) {
         {/* ─── TAB 5: Growth Path ─────────────────────────────────── */}
         {activeTab === "growth" && (
           <div className="space-y-8">
+            <ExplainerBanner
+              tabId="growth"
+              icon="📈"
+              title="What is Growth Path?"
+              body="Track your cognitive evolution over time. Compare two twin versions side-by-side to see how your decision dimensions have shifted. Get personalised coaching tips for each dimension to accelerate your growth toward your ideal decision profile."
+              showExplainer={showExplainer}
+              setShowExplainer={setShowExplainer}
+            />
             <h2 className="text-xl font-bold">Growth Path</h2>
             <GreenCard>
               <h3 className="font-bold mb-4">Twin Delta Engine</h3>
@@ -2345,9 +2666,21 @@ export function UserDashboardPage({ onNavigate }: Props) {
                             ).toFixed(1)}
                           </span>
                         </div>
-                        <p className="text-xs" style={{ color: gold }}>
-                          💡 {coachingTip(dim, delta)}
-                        </p>
+                        <div
+                          className="mt-2 flex items-start gap-2 rounded-lg p-2.5"
+                          style={{
+                            backgroundColor: "rgba(200,162,74,0.08)",
+                            border: "1px solid rgba(200,162,74,0.2)",
+                          }}
+                        >
+                          <span style={{ color: gold }}>💡</span>
+                          <p
+                            className="text-xs leading-relaxed"
+                            style={{ color: "rgba(200,162,74,0.85)" }}
+                          >
+                            {coachingTip(dim, delta)}
+                          </p>
+                        </div>
                       </div>
                     );
                   })}
@@ -2355,121 +2688,30 @@ export function UserDashboardPage({ onNavigate }: Props) {
               )}
             </GreenCard>
 
-            {/* Decision Log */}
             <GreenCard>
-              <h3 className="font-bold mb-4">Decision Log</h3>
-              <p className="text-white/50 text-sm mb-4">
-                Log real decisions and track how your twin model performs over
-                time.
-              </p>
-              <div className="space-y-3 mb-4">
-                <textarea
-                  value={logScenario}
-                  onChange={(e) => setLogScenario(e.target.value)}
-                  placeholder="Decision scenario..."
-                  className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none resize-none"
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.07)",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                  }}
-                  rows={2}
-                  data-ocid="growth.log_scenario.textarea"
-                />
-                <input
-                  type="text"
-                  value={logTwinUsed}
-                  onChange={(e) => setLogTwinUsed(e.target.value)}
-                  placeholder="Twin version used (e.g. Bold Me)"
-                  className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none"
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.07)",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                  }}
-                  data-ocid="growth.log_twin.input"
-                />
-                <input
-                  type="text"
-                  value={logDecisionOutcome}
-                  onChange={(e) => setLogDecisionOutcome(e.target.value)}
-                  placeholder="Predicted/planned outcome"
-                  className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none"
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.07)",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                  }}
-                  data-ocid="growth.log_outcome.input"
-                />
-                <input
-                  type="text"
-                  value={logActualOutcome}
-                  onChange={(e) => setLogActualOutcome(e.target.value)}
-                  placeholder="Actual outcome (fill in after the fact)"
-                  className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none"
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.07)",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                  }}
-                  data-ocid="growth.log_actual.input"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={handleLogDecision}
-                disabled={logSaving || !logScenario.trim()}
-                className="px-6 py-2 rounded-xl font-bold text-sm disabled:opacity-40"
-                style={{ backgroundColor: gold, color: "#1B4332" }}
-                data-ocid="growth.log.button"
-              >
-                {logSaving ? "Saving..." : "Log Decision"}
-              </button>
-
-              {decisionLogs.length > 0 && (
-                <div className="mt-6">
-                  <h4 className="font-semibold text-sm mb-3">Past Decisions</h4>
-                  <div className="space-y-3">
-                    {decisionLogs.slice(0, 10).map((log, li) => (
-                      <div
-                        key={log.id}
-                        className="rounded-xl p-4"
-                        style={{
-                          backgroundColor: "rgba(255,255,255,0.04)",
-                          border: "1px solid rgba(255,255,255,0.07)",
-                        }}
-                        data-ocid={`growth.log.item.${li + 1}`}
-                      >
-                        <p className="text-white text-sm font-medium mb-1">
-                          {log.scenario}
-                        </p>
-                        <div className="flex flex-wrap gap-3 text-xs text-white/40">
-                          <span>
-                            Twin:{" "}
-                            <span className="text-white/60">
-                              {log.twinVersionUsed || "\u2014"}
-                            </span>
-                          </span>
-                          <span>
-                            Predicted:{" "}
-                            <span className="text-white/60">
-                              {log.decisionOutcome || "\u2014"}
-                            </span>
-                          </span>
-                          <span>
-                            Actual:{" "}
-                            <span style={{ color: gold }}>
-                              {log.actualOutcome || "Pending"}
-                            </span>
-                          </span>
-                          <span>
-                            {new Date(
-                              Number(log.timestamp) / 1_000_000,
-                            ).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">📋</span>
+                <div>
+                  <h3 className="font-bold mb-1">Decision Log</h3>
+                  <p className="text-white/50 text-sm">
+                    Log and track your real-world decisions with text, audio or
+                    video.
+                  </p>
                 </div>
-              )}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("decisionlog")}
+                  className="ml-auto px-4 py-2 rounded-xl text-sm font-semibold"
+                  style={{
+                    backgroundColor: "rgba(200,162,74,0.15)",
+                    color: gold,
+                    border: "1px solid rgba(200,162,74,0.3)",
+                  }}
+                  data-ocid="growth.goto_decisionlog.button"
+                >
+                  Open Decision Log →
+                </button>
+              </div>
             </GreenCard>
           </div>
         )}
@@ -2477,6 +2719,14 @@ export function UserDashboardPage({ onNavigate }: Props) {
         {/* ─── TAB 6: My Day Journal ─────────────────────────────── */}
         {activeTab === "journal" && (
           <div className="space-y-6">
+            <ExplainerBanner
+              tabId="journal"
+              icon="📓"
+              title="Why keep a Daily Journal?"
+              body="Your everyday experiences are the richest data source for training your Mind Twin. By journaling about your day — decisions you made, how you felt, what challenged you — you create a living record that the AI analyses to deepen your twin's accuracy. Write, record audio, or capture video. No rules — just reflect."
+              showExplainer={showExplainer}
+              setShowExplainer={setShowExplainer}
+            />
             {/* Hero Header */}
             <div
               className="rounded-2xl px-8 py-10 text-center"
@@ -2893,6 +3143,386 @@ export function UserDashboardPage({ onNavigate }: Props) {
                         </GreenCard>
                       );
                     })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {/* ─── TAB 7: Decision Log ─────────────────────────────── */}
+        {activeTab === "decisionlog" && (
+          <div className="space-y-6">
+            <ExplainerBanner
+              tabId="decisionlog"
+              icon="📋"
+              title="What is the Decision Log?"
+              body="Every significant decision you make is a training opportunity. Log decisions as they happen — the scenario, your reasoning, and eventually the real-world outcome. Over time, this builds a pattern of your decision behaviour that feeds back into your twin's evolution. You can type, record audio, or capture video."
+              showExplainer={showExplainer}
+              setShowExplainer={setShowExplainer}
+            />
+            <h2 className="text-xl font-bold">Decision Log</h2>
+
+            <GreenCard>
+              {/* Mode Picker */}
+              <div className="flex gap-2 mb-5">
+                {(["text", "audio", "video"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setDlMode(m)}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all"
+                    style={{
+                      backgroundColor:
+                        dlMode === m ? gold : "rgba(255,255,255,0.07)",
+                      color: dlMode === m ? "#1B4332" : "rgba(255,255,255,0.6)",
+                      border:
+                        dlMode === m
+                          ? "none"
+                          : "1px solid rgba(255,255,255,0.15)",
+                      fontWeight: dlMode === m ? 700 : 400,
+                    }}
+                    data-ocid={`decisionlog.${m}.toggle`}
+                  >
+                    {m === "text" ? "✍️" : m === "audio" ? "🎙️" : "🎥"}{" "}
+                    {m.charAt(0).toUpperCase() + m.slice(1)}
+                  </button>
+                ))}
+              </div>
+
+              {dlMode === "text" && (
+                <div className="space-y-3">
+                  <textarea
+                    value={logScenario}
+                    onChange={(e) => setLogScenario(e.target.value)}
+                    placeholder="Describe the decision scenario..."
+                    className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none resize-none"
+                    style={{
+                      backgroundColor: "rgba(255,255,255,0.07)",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                    }}
+                    rows={3}
+                    data-ocid="decisionlog.scenario.textarea"
+                  />
+                  <input
+                    type="text"
+                    value={logTwinUsed}
+                    onChange={(e) => setLogTwinUsed(e.target.value)}
+                    placeholder="Twin version used (e.g. Bold Me)"
+                    className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none"
+                    style={{
+                      backgroundColor: "rgba(255,255,255,0.07)",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                    }}
+                    data-ocid="decisionlog.twin.input"
+                  />
+                  <input
+                    type="text"
+                    value={logDecisionOutcome}
+                    onChange={(e) => setLogDecisionOutcome(e.target.value)}
+                    placeholder="Predicted / planned outcome"
+                    className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none"
+                    style={{
+                      backgroundColor: "rgba(255,255,255,0.07)",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                    }}
+                    data-ocid="decisionlog.outcome.input"
+                  />
+                  <input
+                    type="text"
+                    value={logActualOutcome}
+                    onChange={(e) => setLogActualOutcome(e.target.value)}
+                    placeholder="Actual outcome (fill in after the fact)"
+                    className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none"
+                    style={{
+                      backgroundColor: "rgba(255,255,255,0.07)",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                    }}
+                    data-ocid="decisionlog.actual.input"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleLogDecision}
+                    disabled={logSaving || !logScenario.trim()}
+                    className="px-6 py-2.5 rounded-xl font-bold text-sm disabled:opacity-40"
+                    style={{ backgroundColor: gold, color: "#1B4332" }}
+                    data-ocid="decisionlog.submit.button"
+                  >
+                    {logSaving ? "Saving..." : "Log Decision"}
+                  </button>
+                </div>
+              )}
+
+              {(dlMode === "audio" || dlMode === "video") && (
+                <div>
+                  {dlMode === "video" && (
+                    <p
+                      className="text-xs mb-3"
+                      style={{ color: "rgba(200,162,74,0.7)" }}
+                    >
+                      Video gives richer context for analysis — optional
+                    </p>
+                  )}
+                  <div className="text-center py-4">
+                    {dlRecording ? (
+                      <div className="space-y-4">
+                        <div
+                          className="text-4xl font-bold animate-pulse"
+                          style={{ color: "#f87171" }}
+                        >
+                          ⏺ {formatTimer(dlTimeLeft)}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (
+                              dlMrRef.current &&
+                              dlMrRef.current.state !== "inactive"
+                            )
+                              dlMrRef.current.stop();
+                            setDlRecording(false);
+                            if (dlTimerRef.current)
+                              clearInterval(dlTimerRef.current);
+                            if (dlStreamRef.current)
+                              for (const t of dlStreamRef.current.getTracks())
+                                t.stop();
+                            if (dlRecogRef.current) dlRecogRef.current.stop();
+                          }}
+                          className="px-6 py-2.5 rounded-xl font-bold text-sm"
+                          style={{ backgroundColor: "#f87171", color: "white" }}
+                          data-ocid="decisionlog.stop.button"
+                        >
+                          Stop Recording
+                        </button>
+                      </div>
+                    ) : dlBlob ? (
+                      <div className="space-y-4">
+                        <div className="text-white/60 text-sm">
+                          Recording ready
+                        </div>
+                        {dlMode === "video" && dlBlobUrl && (
+                          <video
+                            src={dlBlobUrl}
+                            controls
+                            className="rounded-xl max-w-full mx-auto"
+                            style={{ maxHeight: 200 }}
+                          >
+                            <track kind="captions" />
+                          </video>
+                        )}
+                        {dlMode === "audio" && dlBlobUrl && (
+                          <audio src={dlBlobUrl} controls className="w-full">
+                            <track kind="captions" />
+                          </audio>
+                        )}
+                        {dlTranscript && (
+                          <p className="text-white/50 text-xs italic">
+                            "{dlTranscript.slice(0, 120)}
+                            {dlTranscript.length > 120 ? "…" : ""}"
+                          </p>
+                        )}
+                        <div className="flex gap-2 justify-center">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!actor) return;
+                              setLogSaving(true);
+                              try {
+                                const scenario =
+                                  dlTranscript ||
+                                  `${dlMode} decision log — ${new Date().toLocaleDateString()}`;
+                                await actor.logDecision(scenario, "", "", "");
+                                await loadDecisionLogs();
+                                toast.success("Decision log saved!");
+                                setDlBlob(null);
+                                setDlBlobUrl(null);
+                                setDlTranscript("");
+                              } catch (_) {
+                                toast.error("Failed to save.");
+                              } finally {
+                                setLogSaving(false);
+                              }
+                            }}
+                            disabled={logSaving}
+                            className="px-5 py-2 rounded-xl font-bold text-sm disabled:opacity-40"
+                            style={{ backgroundColor: gold, color: "#1B4332" }}
+                            data-ocid="decisionlog.save.button"
+                          >
+                            {logSaving ? "Saving..." : "Save Entry"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDlBlob(null);
+                              setDlBlobUrl(null);
+                              setDlTranscript("");
+                            }}
+                            className="px-5 py-2 rounded-xl text-sm border border-white/20 text-white/60"
+                          >
+                            Re-record
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const isVideo = dlMode === "video";
+                              const constraints = isVideo
+                                ? { audio: true, video: { facingMode: "user" } }
+                                : { audio: true };
+                              const stream =
+                                await navigator.mediaDevices.getUserMedia(
+                                  constraints,
+                                );
+                              dlStreamRef.current = stream;
+                              dlChunksRef.current = [];
+                              const mr = new MediaRecorder(stream);
+                              dlMrRef.current = mr;
+                              mr.ondataavailable = (e) => {
+                                if (e.data.size > 0)
+                                  dlChunksRef.current.push(e.data);
+                              };
+                              mr.onstop = () => {
+                                const mime = isVideo
+                                  ? "video/webm"
+                                  : "audio/webm";
+                                const blob = new Blob(dlChunksRef.current, {
+                                  type: mime,
+                                });
+                                setDlBlob(blob);
+                                setDlBlobUrl(URL.createObjectURL(blob));
+                              };
+                              mr.start();
+                              setDlRecording(true);
+                              setDlTimeLeft(180);
+                              dlTimerRef.current = setInterval(() => {
+                                setDlTimeLeft((prev) => {
+                                  if (prev <= 1) {
+                                    if (
+                                      dlMrRef.current &&
+                                      dlMrRef.current.state !== "inactive"
+                                    )
+                                      dlMrRef.current.stop();
+                                    setDlRecording(false);
+                                    if (dlTimerRef.current)
+                                      clearInterval(dlTimerRef.current);
+                                    if (dlStreamRef.current)
+                                      for (const t of dlStreamRef.current.getTracks())
+                                        t.stop();
+                                    return 0;
+                                  }
+                                  return prev - 1;
+                                });
+                              }, 1000);
+                              const SpeechRecognition =
+                                (window as any).SpeechRecognition ||
+                                (window as any).webkitSpeechRecognition;
+                              if (SpeechRecognition) {
+                                const rec = new SpeechRecognition();
+                                rec.continuous = true;
+                                rec.interimResults = true;
+                                rec.onresult = (event: any) => {
+                                  let t = "";
+                                  for (let i = 0; i < event.results.length; i++)
+                                    t += event.results[i][0].transcript;
+                                  setDlTranscript(t);
+                                };
+                                rec.start();
+                                dlRecogRef.current = rec;
+                              }
+                            } catch (_) {
+                              alert("Could not access microphone/camera.");
+                            }
+                          }}
+                          className="w-20 h-20 rounded-full mb-4 flex items-center justify-center mx-auto text-3xl"
+                          style={{
+                            backgroundColor: "rgba(200,162,74,0.2)",
+                            border: `2px solid ${gold}`,
+                          }}
+                          data-ocid="decisionlog.record.button"
+                        >
+                          {dlMode === "video" ? "🎥" : "🎙️"}
+                        </button>
+                        <p className="text-white/60 text-sm">
+                          Tap to start {dlMode} recording
+                        </p>
+                        <p className="text-white/30 text-xs mt-1">
+                          Up to 3 minutes
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </GreenCard>
+
+            {/* Past Decision Logs */}
+            <div>
+              <h3 className="font-bold mb-4">Past Decisions</h3>
+              {decisionLogs.length === 0 ? (
+                <GreenCard
+                  className="text-center py-10"
+                  data-ocid="decisionlog.empty_state"
+                >
+                  <div className="text-4xl mb-3">📋</div>
+                  <p className="text-white/50 text-sm">
+                    No decisions logged yet. Log your first real decision above.
+                  </p>
+                </GreenCard>
+              ) : (
+                <div className="space-y-3">
+                  {decisionLogs.slice(0, 20).map((log, li) => (
+                    <div
+                      key={log.id}
+                      className="rounded-xl p-4"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgba(27,67,50,0.6) 0%, rgba(10,31,20,0.8) 100%)",
+                        border: "1px solid rgba(255,255,255,0.07)",
+                      }}
+                      data-ocid={`decisionlog.item.${li + 1}`}
+                    >
+                      <p className="text-white text-sm font-medium mb-2">
+                        {log.scenario}
+                      </p>
+                      <div className="flex flex-wrap gap-3 text-xs text-white/40">
+                        {log.twinVersionUsed && (
+                          <span>
+                            Twin:{" "}
+                            <span className="text-white/60">
+                              {log.twinVersionUsed}
+                            </span>
+                          </span>
+                        )}
+                        {log.decisionOutcome && (
+                          <span>
+                            Predicted:{" "}
+                            <span className="text-white/60">
+                              {log.decisionOutcome}
+                            </span>
+                          </span>
+                        )}
+                        <span>
+                          Actual:{" "}
+                          <span
+                            style={{
+                              color: log.actualOutcome
+                                ? gold
+                                : "rgba(255,255,255,0.3)",
+                            }}
+                          >
+                            {log.actualOutcome || "Pending"}
+                          </span>
+                        </span>
+                        <span>
+                          {new Date(
+                            Number(log.timestamp) / 1_000_000,
+                          ).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

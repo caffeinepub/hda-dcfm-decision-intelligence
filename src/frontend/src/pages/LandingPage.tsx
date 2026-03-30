@@ -1,7 +1,6 @@
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import sathishPhoto1 from "../assets/sathish-photo-1.jpg";
-import sathishPhoto2 from "../assets/sathish-photo-2.jpg";
 import { Footer } from "../components/Footer";
 
 const DIMENSIONS = [
@@ -1595,23 +1594,6 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                   className="rounded-2xl object-cover"
                   style={{
                     width: "180px",
-                    height: "240px",
-                    objectPosition: "50% 10%",
-                  }}
-                />
-              </div>
-              <div
-                className="rounded-2xl overflow-hidden shadow-xl hidden sm:block"
-                style={{
-                  border: "1px solid rgba(200,162,74,0.25)",
-                }}
-              >
-                <img
-                  src={sathishPhoto2}
-                  alt="Sathish Sampath"
-                  className="rounded-2xl object-cover"
-                  style={{
-                    width: "160px",
                     height: "240px",
                     objectPosition: "50% 10%",
                   }}
